@@ -1,102 +1,284 @@
-# FLClash 通用代理覆写脚本
+# FLClash Generic Proxy Override
 
-适用于 FLClash v0.8.85+，标准 Mihomo 内核，任何机场订阅均可使用。
+适用于 FLClash 的 Mihomo 内核覆写脚本。全加密 DNS、12 策略组、229 条分流规则，导入即用，零手动配置。
 
-## 功能
+[![Version](https://img.shields.io/badge/version-v1.0-blue)]()
 
-- **全加密 DNS**：DoH / DoT，无明文泄漏，国内 DNS 走阿里/腾讯，国外走 Cloudflare/Google
-- **12 策略组**：3 基础设施组 + 9 业务分流组，每个组均可独立切换到任意节点
-- **智能分流**：AI 服务 / YouTube / Telegram / 流媒体 / 苹果 / 微软 / 国内直连 / 广告拦截 / 漏网之鱼
-- **9 远程规则集**：MRS 格式，自动更新
-- **完整查询覆盖**：海外社交、游戏平台、开发工具、流媒体均精准分流
-- **Google 服务优化**：谷歌商店下载修复、AI API 准确分流
-- **无需硬编码节点**：动态扫描订阅节点，自动排除流量/到期等无效信息
+## 目录
+
+- [快速开始](#快速开始)
+- [架构设计](#架构设计)
+- [DNS 技术细节](#dns-技术细节)
+- [策略组](#策略组)
+- [规则覆盖](#规则覆盖)
+- [节点分类逻辑](#节点分类逻辑)
+- [自定义](#自定义)
+- [常见问题](#常见问题)
 
 ## 快速开始
 
-### 第 1 步：导入覆写脚本
+**前提**：FLClash ≥ v0.8.85，已导入机场订阅。
 
-FLClash → **配置** → **覆写脚本** → 右上角 **+** → 输入名称 → 粘贴以下 URL：
+### 第 1 步：创建覆写脚本
+
+FLClash → **配置** → **覆写脚本** → 右上角 **+**
+
+| 字段 | 值 |
+|------|-----|
+| 名称 | 任意（如 `通用覆写`） |
+| 类型 | 选择 **粘贴** |
+| URL | 填入下方 URL |
 
 ```
-https://raw.githubusercontent.com/{你的用户名}/{仓库名}/main/proxy-override.js
+https://raw.githubusercontent.com/USER/REPO/main/proxy-override.js
 ```
 
 保存。
 
-### 第 2 步：关联到订阅
+### 第 2 步：关联订阅
 
-配置页 → 订阅卡片 **⋮** → **更多** → **覆写** → 点选刚才创建的脚本 → 确定 → 下拉刷新订阅。
+配置页 → 长按/点击订阅卡片 **⋮** → **更多** → **覆写** → 勾选刚才创建的脚本 → 确定 → 下拉刷新。
 
-> GeoX 外部资源已内置在脚本中自动注入，无需手动配置。
+### 第 3 步：验证
 
-## 策略组架构
+刷新后检查：
+
+- 策略组是否出现 `🎯 节点选择` / `🤖 AI 服务` 等
+- `⚡ 自动选择` 是否包含订阅节点
+- DNS 查询日志中是否出现 `tls://` 或 `https://` 前缀
+- GeoX 文件是否自动下载（`geosite.dat` / `geoip.dat`）
+
+## 架构设计
 
 ```
-┌─ ⚡ 自动选择 (url-test) ─── 从所有节点中自动选延迟最低的
-├─ 🔄 故障转移 (fallback) ─── 按顺序尝试节点，首个可用即为选中
-├─ 🎯 节点选择 (select) ──── 手动选择入口，汇聚所有节点
-│
-├─ 🤖 AI 服务 ────────────── OpenAI / Claude / Gemini / Perplexity 等
-├─ 📹 YouTube ─────────────── YouTube 全家桶
-├─ ✈️ Telegram ────────────── Telegram 全家桶
-├─ 🎬 流媒体 ──────────────── Netflix / Disney+ / Spotify / TikTok 等
-├─ 🍎 苹果服务 ────────────── 默认直连，可切代理
-├─ Ⓜ️ 微软服务 ────────────── 默认直连，可切代理
-├─ 🏠 国内直连 ────────────── 始终直连
-├─ 🛑 广告拦截 ────────────── 默认 REJECT
-└─ 🐟 漏网之鱼 ────────────── MATCH 最终兜底，未命中规则的流量
+请求 → 规则引擎（229 条，顺序匹配）
+         │
+         ├─ 广告          → REJECT
+         ├─ QUIC UDP      → REJECT（微软除外）
+         ├─ 局域网/进程    → DIRECT
+         ├─ YouTube       → 📹 YouTube  → 代理池
+         ├─ AI API        → 🤖 AI 服务  → 代理池
+         ├─ Telegram      → ✈️ Telegram → 代理池
+         ├─ 流媒体         → 🎬 流媒体   → 代理池
+         ├─ 海外社交/游戏/开发 → 🎯 节点选择 → 代理池
+         ├─ 苹果/微软      → 默认 DIRECT（可切）
+         ├─ 国内域名/IP    → DIRECT
+         └─ 未匹配         → 🐟 漏网之鱼（MATCH）
 ```
 
-每个业务组均可独立选择任意节点，也可跟随 `🎯 节点选择`。
+## DNS 技术细节
 
-## DNS 配置
+### 全链路加密
 
-| 角色 | 服务器 | 协议 |
-|------|--------|------|
-| Bootstrap | `tls://223.5.5.5` / `tls://223.6.6.6` | DNS over TLS |
-| 代理节点解析 | `https://dns.alidns.com/dns-query` / `tls://223.5.5.5` | DoH / DoT |
-| 直连流量解析 | `https://dns.alidns.com/dns-query` | DoH |
-| 国内域名分流 | 阿里 DoH / 腾讯 DoH | DoH |
-| 国外域名分流 | Cloudflare / Google | DoH |
+| 角色 | 服务器 | 协议 | 说明 |
+|------|--------|------|------|
+| Bootstrap | `tls://223.5.5.5` `tls://223.6.6.6` | DoT | 解析 DoH 域名自身的 IP，阿里 DNS 国内低延迟 |
+| 代理节点解析 | `https://dns.alidns.com/dns-query` `tls://223.5.5.5` | DoH / DoT | 解析机场节点域名，**国内加密通道防止 SNI 泄漏** |
+| 直连流量 | `https://dns.alidns.com/dns-query` | DoH | 国内域名解析，走阿里 DoH |
+| 国内分流 | 阿里 DoH + 腾讯 DoH | DoH | `geosite:cn,geolocation-cn,bilibili,biliintl` |
+| 国外兜底 | Cloudflare + Google | DoH | 未命中 policy 的域名 |
 
-全链路加密，无 UDP 53 明文泄漏。
+**无 UDP 53 明文**，全部 DNS 查询经 TLS 加密传输。
 
-Fake-IP 模式，排除名单覆盖局域网、远程工具、NTP、STUN、认证检测、QQ 登录、B站 CDN、国服战网等。
+### Fake-IP 模式
+
+```
+enhanced-mode: fake-ip
+fake-ip-range: 198.18.0.1/16
+```
+
+- 代理域名返回 `198.18.x.x` 虚拟 IP，请求进入规则引擎后通过域名匹配规则
+- 排除名单覆盖：局域网、NTP、STUN/WebRTC、远程工具、QQ 登录、移动认证、B站 CDN、国服战网、节点域名
+- 直连域名通过 `direct-nameserver` 解析真实 IP
+
+### DNS 查询链路
+
+```
+国内域名：fake-ip → nameserver-policy 匹配 geosite:cn → 阿里/腾讯 DoH
+国外域名：fake-ip → 未命中 policy → Cloudflare/Google DoH
+节点域名：proxy-server-nameserver → 阿里 DoH/DoT（独立通道，避免循环依赖）
+aistudio.google.com → 单独走国外 DoH（防止国内 DNS 污染）
+```
+
+## 策略组
+
+### 基础设施组（3 个）
+
+| 组 | 类型 | 测速 URL | 行为 |
+|----|------|----------|------|
+| `🎯 节点选择` | select | — | 手动选择入口 |
+| `⚡ 自动选择` | url-test | `gstatic.com/generate_204` | 300s 测速，延迟最低胜出，tolerance=150ms |
+| `🔄 故障转移` | fallback | `gstatic.com/generate_204` | 按序尝试，首个可用即为选中，300s 重检 |
+
+### 业务策略组（9 个）
+
+| 组 | 默认策略 | 可用选项 |
+|----|----------|----------|
+| `🤖 AI 服务` | 🎯 节点选择 | 全部节点 + DIRECT |
+| `📹 YouTube` | 🎯 节点选择 | 全部节点 + DIRECT |
+| `✈️ Telegram` | 🎯 节点选择 | 全部节点 + DIRECT |
+| `🎬 流媒体` | 🎯 节点选择 | 全部节点 + DIRECT |
+| `🍎 苹果服务` | DIRECT | DIRECT + 全部节点 |
+| `Ⓜ️ 微软服务` | DIRECT | DIRECT + 全部节点 |
+| `🏠 国内直连` | DIRECT | DIRECT |
+| `🛑 广告拦截` | REJECT | REJECT / DIRECT |
+| `🐟 漏网之鱼` | 🎯 节点选择 | 全部节点 + DIRECT + REJECT |
+
+每个业务组 **独立列出所有订阅节点**，无需通过 `🎯 节点选择` 跳转即可直选任意节点。
+
+### 选型说明
+
+- **url-test vs fallback**：url-test 适合日常使用（自动选最快），fallback 适合需要稳定单一出口的场景
+- **为什么流媒体不走 url-test**：部分流媒体平台检测 IP 频繁切换，手动锁定节点更稳定
+- **为什么漏网之鱼包含 REJECT**：排查规则遗漏时可以临时 REJECT 未匹配流量，观察日志定位新域名
 
 ## 规则覆盖
 
-| 类别 | 覆盖范围 |
-|------|----------|
-| AI 服务 | OpenAI / ChatGPT / Claude / Gemini / Perplexity / Mistral / Cohere / Midjourney / Stability / Cursor / HuggingFace / Replicate / Suno / OpenRouter / RunPod / xAI / Grok / Copilot |
-| YouTube | youtube.com / youtu.be / googlevideo.com / ytimg.com / ggpht.com |
-| Telegram | telegram.org / telegram.me / t.me |
-| 流媒体 | Netflix / Disney+ / Spotify / Hulu / HBO Max / Prime Video / Twitch / TikTok / Discovery+ / Paramount+ / Peacock / Vimeo / Dailymotion / Crunchyroll |
-| 海外社交 | Twitter/X / Reddit / Facebook / Instagram / LinkedIn / Snapchat / Pinterest / Threads / Bluesky / Quora / Medium / Imgur / Flickr / Tumblr / Pixiv |
-| 游戏平台 | Steam / Epic / EA / Ubisoft / Riot / Blizzard / Nintendo / PlayStation / Xbox / Hoyoverse / GOG / Rockstar |
-| 开发工具 | GitHub / GitLab / Docker / JetBrains / npm / PyPI / Cargo / RubyGems / NuGet / Packagist / Stack Overflow / Vercel / Netlify / Cloudflare Workers / Sentry / Postman / Notion / Figma / Atlassian / HashiCorp |
-| 远程规则集 | anti-ad / openai / tiktok / github / microsoft / apple / proxy_sites (!cn) / cn_sites / gfw + GEOSITE 内置规则 |
+### 远程规则集（9 个 MRS 格式）
+
+| 规则集 | 来源 | 更新间隔 |
+|--------|------|----------|
+| `anti-ad` | DustinWin/ruleset_geodata | ~23.7h |
+| `openai` | MetaCubeX/meta-rules-dat | ~23.8h |
+| `tiktok` | MetaCubeX/meta-rules-dat | ~23.8h |
+| `github` | MetaCubeX/meta-rules-dat | ~23.8h |
+| `microsoft` | MetaCubeX/meta-rules-dat | ~23.8h |
+| `apple` | MetaCubeX/meta-rules-dat | ~23.8h |
+| `proxy_sites` | MetaCubeX/meta-rules-dat (`geolocation-!cn`) | ~24h |
+| `cn_sites` | MetaCubeX/meta-rules-dat (`cn`) | ~24h |
+| `gfw` | MetaCubeX/meta-rules-dat (`gfw`) | ~24h |
+
+所有规则集通过 `fastly.jsdelivr.net` CDN 分发，间隔错开避免同时更新。
+
+### 内置域名规则（229 条）
+
+| 类别 | 数量 | 典型域名 |
+|------|------|----------|
+| 广告拦截 | 2 | `category-ads-all` + `anti-ad` 规则集 |
+| QUIC 阻断 | 2 | 非微软/非中国站点的 UDP 443 |
+| 局域网 | 5 | `private` / `localhost` / `local` |
+| 进程直连 | 17 | 微信、QQ、远程桌面、Tailscale、frpc 等 |
+| YouTube | 5 | `youtube.com` / `googlevideo.com` / `ytimg.com` 等 |
+| AI 服务 | 27 | OpenAI / Claude / Gemini / Perplexity / Cursor / HuggingFace 等 |
+| Telegram | 3 | `telegram.org` / `t.me` |
+| 海外社交 | 23 | Twitter/X / Reddit / Facebook / Instagram / Pixiv 等 |
+| 流媒体 | 21 | Netflix / Disney+ / Spotify / TikTok 等 |
+| 游戏平台 | 20 | Steam / Epic / Blizzard / Nintendo / PlayStation 等 |
+| 开发工具 | 45 | GitHub / Docker / JetBrains / npm / PyPI / Vercel 等 |
+| 苹果 | 6 | Apple 规则集 + `icloud.com` 直连 |
+| 微软 | 11 | Microsoft 规则集 + 商店/更新直连 |
+| 国内直连 | 15 | 百度 / 阿里 / 腾讯 / 字节等 |
+| 端口直连 | 6 | NTP `123` / STUN `3478-3479` 等 |
+| Google .cn | 3 | `services.googleapis.cn` 等 |
+| 基础分流 | 4 | GFW / cn_sites / proxy_sites / GEOIP CN |
+| MATCH | 1 | 漏网之鱼兜底 |
+
+### 规则优先级
+
+规则按从上到下的顺序匹配，首次命中即停止。顺序遵循：
+
+```
+REJECT（广告/QUIC） → DIRECT（局域网/进程） → 业务分组 → 规则集分流 → GEOIP CN → MATCH
+```
+
+`googleapis.com` 通配规则排在 AI 专属子域名（如 `generativelanguage.googleapis.com`）**之后**，避免遮蔽。
+
+## 节点分类逻辑
+
+覆写脚本接管订阅的所有代理节点，通过以下逻辑动态构建策略组：
+
+```
+config.proxies（订阅原始节点列表）
+  │
+  ├─ 过滤：排除名称中包含「剩余/到期/套餐/流量/官网/测速」等信息节点
+  │
+  └─ 有效节点 → c.ALL
+       │
+       ├─ ⚡ 自动选择 (url-test) ← 全量节点
+       ├─ 🔄 故障转移 (fallback) ← 全量节点
+       ├─ 🎯 节点选择 (select)   ← ⚡ + 🔄 + 全量节点 + DIRECT
+       └─ 所有业务组 (select)     ← 🎯 + ⚡ + 🔄 + 全量节点 + DIRECT
+```
+
+不使用 `filter` 字段，而是直接构建 `proxies` 数组传入各组，兼容性最好。
+
+## 自定义
+
+### 添加需要过滤的节点关键词
+
+编辑 `isInfoNode` 函数中的正则表达式：
+
+```js
+function isInfoNode(name) {
+  return /(你的关键词1|你的关键词2|...)/i.test(name)
+}
+```
+
+### 调整 url-test 参数
+
+修改 `⚡ 自动选择` 组：
+
+```js
+upsertGroup(config, {
+  name: '⚡ 自动选择', type: 'url-test',
+  url: 'http://www.gstatic.com/generate_204',
+  interval: 300,    // 测速间隔（秒）
+  tolerance: 150,   // 切换阈值（毫秒）
+  lazy: true,       // 按需触发
+  proxies: allNodes.slice()
+})
+```
+
+### 添加自定义 skip-domain
+
+在 `overwriteGeneral` 函数的 sniffer 配置中追加：
+
+```js
+'skip-domain': [
+  '你的节点域名1',
+  '你的节点域名2',
+  // ... 保留原有条目
+]
+```
+
+### 覆盖范围
+
+脚本会**完全替换**订阅自带的以下内容：
+
+- `proxy-groups` — 清空后重建
+- `rules` — 清空后重建
+- `rule-providers` — 清空后重建
+- `dns` — 完全覆写
+- `sniffer` — 完全覆写
+- `profile` — 覆写
+- `geox-url` — 覆写
+
+订阅的 `proxies` 节点列表不受影响。
 
 ## 常见问题
 
-### 谷歌商店下载一直等待
+### 谷歌商店下载等待中
 
-已内置修复：`services.googleapis.cn` / `googleapis.cn` / `xn--ngstr-lra8j.com` 走 🎯 节点选择。
+已内置修复：`services.googleapis.cn` / `googleapis.cn` / `xn--ngstr-lra8j.com` 走 `🎯 节点选择`。
 
-### 某个服务走了错误的组
+### 某个服务走了错误的线路
 
-FLClash → 配置 → 点击日志 → 搜索域名 → 找到匹配的规则 → 确认规则顺序是否合理。如需调整，联系维护者更新覆写脚本。
+1. FLClash → 配置 → 点击订阅 → 日志
+2. 搜索目标域名
+3. 确认匹配的规则及顺序
+4. 如确需调整，修改覆写脚本中 `injectRules` 函数的规则顺序
 
 ### 覆写不生效
 
-1. 确认已关联覆写到对应订阅
+1. 确认覆写已关联到对应订阅
 2. 下拉刷新订阅
-3. 检查「外部资源」标签是否正确配置了 GeoX URL
-4. 检查覆写脚本是否与该订阅的覆写列表关联
+3. 确认日志中有 `[v1.0]` 前缀的输出
+4. 如果日志为空，检查 FLClash 版本是否 ≥ v0.8.85
 
-### 如何自定义
+### 部分节点未出现在策略组
 
-直接编辑覆写脚本内容，FLClash 会在刷新订阅时重新应用。常见自定义：
-- 修改 `skip-domain` 添加自己的节点域名
-- 调整策略组的 `proxies` 顺序
-- 增删 `fake-ip-filter` 条目
+检查节点名称是否命中了 `isInfoNode` 的过滤正则。在 FLClash 日志中搜索 `[v1.0] Valid proxies` 查看过滤后数量。
+
+### 如何更新覆写脚本
+
+FLClash → 配置 → 覆写脚本 → 点击脚本 → 修改 URL 指向新版本，或在本地编辑后保存。下次刷新订阅时自动应用。
