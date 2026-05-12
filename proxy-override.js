@@ -11,13 +11,6 @@
 // 【第 2 步：关联到订阅】
 //   配置页 → 订阅卡片 ⋮ →「更多」→「覆写」→ 点选刚才创建的脚本 → 确定 → 下拉刷新
 //
-// === 脚本导入后必做的手动配置（FlClash UI 内操作） ===
-// 以下由 FlClash App UI 托管，覆写脚本无法注入，必须手动配置：
-//   1. 外部资源（GeoX URL）：编辑订阅 →「外部资源」标签 → 粘贴 geox-url YAML
-//   2. 进阶配置（DNS）：本脚本已注入完整 DNS，此步骤可跳过
-//   geox-url 内容：
-//     geosite: "https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geosite.dat"
-//     geoip: "https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip.dat"
 // ================================================================
 
 const VERSION = 'v1.0'
