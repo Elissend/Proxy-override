@@ -28,16 +28,7 @@ https://raw.githubusercontent.com/{你的用户名}/{仓库名}/main/proxy-overr
 
 配置页 → 订阅卡片 **⋮** → **更多** → **覆写** → 点选刚才创建的脚本 → 确定 → 下拉刷新订阅。
 
-### 第 3 步：配置外部资源（必做）
-
-编辑该订阅 → **外部资源** 标签 → 粘贴以下内容：
-
-```yaml
-geosite: "https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geosite.dat"
-geoip: "https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip.dat"
-```
-
-> 此步骤由 FLClash App UI 托管，覆写脚本无法自动注入，必须手动配置。GeoData 文件是 GEOSITE / GEOIP 规则正常运行的前提。
+> GeoX 外部资源已内置在脚本中自动注入，无需手动配置。
 
 ## 策略组架构
 

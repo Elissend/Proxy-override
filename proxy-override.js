@@ -40,6 +40,11 @@ function overwriteGeneral(config) {
   config.profile['store-selected'] = true
   config.profile['store-fake-ip'] = true
 
+  config['geox-url'] = {
+    geosite: 'https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geosite.dat',
+    geoip: 'https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip.dat'
+  }
+
   // --- Sniffer ---
   config.sniffer = {
     enable: true,
