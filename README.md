@@ -24,7 +24,7 @@
 FLClash → 右下角 **工具** → **进阶设置** → **脚本** → 右上角 **+** → 右上角 **⋮** → **外部获取** → **通过 URL 导入** → 粘贴以下地址：
 
 ```
-https://raw.githubusercontent.com/USER/REPO/main/proxy-override.js
+https://raw.githubusercontent.com/Sgraqwq/Proxy-override/main/proxy-override.js
 ```
 
 ### 第 2 步：关联到订阅
