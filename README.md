@@ -1,8 +1,8 @@
 # FLClash Generic Proxy Override
 
-适用于 FLClash 的 Mihomo 内核覆写脚本。全加密 DNS、12 策略组、229 条分流规则，导入即用，零手动配置。
+适用于 FLClash 的 Mihomo 内核覆写脚本。全加密 DNS、12 策略组、221 条分流规则，导入即用，零手动配置。
 
-[![Version](https://img.shields.io/badge/version-v1.0-blue)]()
+[![Version](https://img.shields.io/badge/version-v1.0-blue)](https://github.com/Sgraqwq/Proxy-override/releases)
 
 ## 目录
 
@@ -12,6 +12,7 @@
 - [策略组](#策略组)
 - [规则覆盖](#规则覆盖)
 - [节点分类逻辑](#节点分类逻辑)
+- [覆盖范围](#覆盖范围)
 - [自定义](#自定义)
 - [常见问题](#常见问题)
 
@@ -43,7 +44,7 @@ FLClash → **配置** → 点击机场订阅右侧的 **⋮** → **更多** �
 ## 架构设计
 
 ```
-请求 → 规则引擎（229 条，顺序匹配）
+请求 → 规则引擎（221 条，顺序匹配）
          │
          ├─ 广告          → REJECT
          ├─ QUIC UDP      → REJECT（微软除外）
@@ -126,7 +127,7 @@ aistudio.google.com → 单独走国外 DoH（防止国内 DNS 污染）
 
 ## 规则覆盖
 
-### 远程规则集（9 个 MRS 格式）
+### 远程规则集（9 个 MRS <sup>①</sup>）
 
 | 规则集 | 来源 | 更新间隔 |
 |--------|------|----------|
@@ -140,25 +141,30 @@ aistudio.google.com → 单独走国外 DoH（防止国内 DNS 污染）
 | `cn_sites` | MetaCubeX/meta-rules-dat (`cn`) | ~24h |
 | `gfw` | MetaCubeX/meta-rules-dat (`gfw`) | ~24h |
 
+<sup>①</sup> MRS 是 Mihomo Rule Set 的缩写，为 Mihomo 内核专有的二进制规则集格式，相比文本规则集解析更快、占用更低。
+
 所有规则集通过 `fastly.jsdelivr.net` CDN 分发，间隔错开避免同时更新。
 
-### 内置域名规则（229 条）
+### 内置域名规则（221 条）
 
-| 类别 | 数量 | 典型域名 |
+| 类别 | 数量 | 典型域名/规则 |
 |------|------|----------|
 | 广告拦截 | 2 | `category-ads-all` + `anti-ad` 规则集 |
 | QUIC 阻断 | 2 | 非微软/非中国站点的 UDP 443 |
 | 局域网 | 5 | `private` / `localhost` / `local` |
 | 进程直连 | 17 | 微信、QQ、远程桌面、Tailscale、frpc 等 |
+| 前置拦截 | 3 | `jsdelivr.net` / `dns.google` 确保走代理 |
 | YouTube | 5 | `youtube.com` / `googlevideo.com` / `ytimg.com` 等 |
 | AI 服务 | 27 | OpenAI / Claude / Gemini / Perplexity / Cursor / HuggingFace 等 |
+| Google 基础 | 2 | `gstatic.com` / `googleapis.com` |
+| DeepSeek | 1 | 国内直连 |
 | Telegram | 3 | `telegram.org` / `t.me` |
-| 海外社交 | 23 | Twitter/X / Reddit / Facebook / Instagram / Pixiv 等 |
+| 海外社交 | 24 | Twitter/X / Reddit / Facebook / Instagram / Pixiv 等 |
 | 流媒体 | 21 | Netflix / Disney+ / Spotify / TikTok 等 |
 | 游戏平台 | 20 | Steam / Epic / Blizzard / Nintendo / PlayStation 等 |
 | 开发工具 | 45 | GitHub / Docker / JetBrains / npm / PyPI / Vercel 等 |
-| 苹果 | 6 | Apple 规则集 + `icloud.com` 直连 |
-| 微软 | 11 | Microsoft 规则集 + 商店/更新直连 |
+| 苹果 | 5 | Apple 规则集 + `icloud.com` 直连 |
+| 微软 | 10 | Microsoft 规则集 + 商店/更新直连 |
 | 国内直连 | 15 | 百度 / 阿里 / 腾讯 / 字节等 |
 | 端口直连 | 6 | NTP `123` / STUN `3478-3479` 等 |
 | Google .cn | 3 | `services.googleapis.cn` 等 |
@@ -193,6 +199,20 @@ config.proxies（订阅原始节点列表）
 ```
 
 不使用 `filter` 字段，而是直接构建 `proxies` 数组传入各组，兼容性最好。
+
+## 覆盖范围
+
+脚本会**完全替换**订阅自带的以下内容：
+
+- `proxy-groups` — 清空后重建
+- `rules` — 清空后重建
+- `rule-providers` — 清空后重建
+- `dns` — 完全覆写
+- `sniffer` — 完全覆写
+- `profile` — 覆写
+- `geox-url` — 覆写
+
+订阅的 `proxies` 节点列表不受影响。
 
 ## 自定义
 
@@ -232,20 +252,6 @@ upsertGroup(config, {
   // ... 保留原有条目
 ]
 ```
-
-### 覆盖范围
-
-脚本会**完全替换**订阅自带的以下内容：
-
-- `proxy-groups` — 清空后重建
-- `rules` — 清空后重建
-- `rule-providers` — 清空后重建
-- `dns` — 完全覆写
-- `sniffer` — 完全覆写
-- `profile` — 覆写
-- `geox-url` — 覆写
-
-订阅的 `proxies` 节点列表不受影响。
 
 ## 常见问题
 
