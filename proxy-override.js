@@ -1,5 +1,5 @@
 // FlClash 覆写脚本
-// 版本：v1.0 (2026-05-12)
+// 版本：v2.0 (2026-05-12)
 // 架构：3 基础设施组 + 9 业务策略组 + 9 rule-providers + 全加密 DNS
 // 适用：FlClash >= v0.8.85；任何机场订阅
 //
@@ -13,7 +13,7 @@
 //
 // ================================================================
 
-const VERSION = 'v1.0'
+const VERSION = 'v2.0'
 
 // FlClash JS 引擎环境兼容
 var log = (typeof console !== 'undefined' && console.log) ? console.log.bind(console) : function() {}
@@ -55,10 +55,7 @@ function overwriteGeneral(config) {
       '+.workers.dev'
     ],
     'skip-domain': [
-      'vmiss.660566.xyz',
-      'vps.660566.xyz',
-      'debian.org',
-      'yinkid.live'
+      'debian.org'
     ]
   }
 
@@ -72,7 +69,7 @@ function overwriteGeneral(config) {
     'fake-ip-filter': [
       '+.lan', '+.local', '+.localhost', '+.direct',
       '+.msftconnecttest.com', '+.msftncsi.com',
-      '+.baidu.com', '+.bilibili.com', '+.bing.com', '+.chiphell.com', '+.iwipwedabay.com',
+      '+.baidu.com', '+.bilibili.com', '+.bing.com', '+.chiphell.com',
       '+.oray.com', '+.sunlogin.com', '+.todesk.com', '+.rustdesk.com',
       '+.teamviewer.com', '+.anydesk.com', '+.tailscale.com', '+.zerotier.com', '+.nvidia.com',
       '+.ntp.org', '+.pool.ntp.org',
@@ -84,7 +81,6 @@ function overwriteGeneral(config) {
       '+.cmpassport.com',
       '+.mcdn.bilivideo.cn',
       '+.battlenet.com.cn', '+.wotgame.cn', '+.wggames.cn', '+.wowsgame.cn',
-      'vmiss.660566.xyz', 'vps.660566.xyz'
     ],
     'default-nameserver': ['tls://223.5.5.5', 'tls://223.6.6.6'],
     'proxy-server-nameserver': ['https://dns.cloudflare.com/dns-query', 'https://dns.google/dns-query'],
@@ -110,7 +106,7 @@ function overwriteGeneral(config) {
 
 function isInfoNode(name) {
   if (!name || typeof name !== 'string') return true
-  return /(剩余|到期|官网|套餐|流量|网址|地址|过期|重置|更新|测速|入口|出口|应急|备用|免费|试用|Sign|Login|Register|Help|FAQ|客服|联系|网站)/i.test(name)
+  return /(剩余|到期|官网|套餐|流量|网址|地址|过期|重置|更新|测速|应急|免费|试用|Sign|Login|Register|Help|FAQ|客服|联系|网站)/i.test(name)
 }
 
 // ================================================================
