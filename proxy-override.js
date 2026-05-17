@@ -401,7 +401,6 @@ function injectRules(config) {
   R.push('DOMAIN-SUFFIX,mzstatic.com,🍎 苹果服务')
 
   // 微软服务
-  R.push('DOMAIN-SUFFIX,microsoft.com,DIRECT')
   R.push('DOMAIN-SUFFIX,storeedge.microsoft.com,DIRECT')
   R.push('DOMAIN-SUFFIX,mp.microsoft.com,DIRECT')
   R.push('DOMAIN-SUFFIX,delivery.mp.microsoft.com,DIRECT')
