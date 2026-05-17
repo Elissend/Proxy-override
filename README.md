@@ -2,7 +2,7 @@
 
 适用于 FLClash 的 Mihomo 内核覆写脚本。全加密 DNS、12 策略组、221 条分流规则，导入即用，零手动配置。
 
-[![Version](https://img.shields.io/badge/version-v1.0-blue)](https://github.com/Sgraqwq/Proxy-override/releases)
+[![Version](https://img.shields.io/badge/version-v2.0-blue)](https://github.com/Sgraqwq/Proxy-override/releases)
 
 ## 目录
 

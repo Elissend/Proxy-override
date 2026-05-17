@@ -1,4 +1,4 @@
-// FlClash 覆写脚本 — 通用代理分流版
+// FlClash 覆写脚本
 // 版本：v1.0 (2026-05-12)
 // 架构：3 基础设施组 + 9 业务策略组 + 9 rule-providers + 全加密 DNS
 // 适用：FlClash >= v0.8.85；任何机场订阅
@@ -87,7 +87,7 @@ function overwriteGeneral(config) {
       'vmiss.660566.xyz', 'vps.660566.xyz'
     ],
     'default-nameserver': ['tls://223.5.5.5', 'tls://223.6.6.6'],
-    'proxy-server-nameserver': ['https://dns.alidns.com/dns-query', 'tls://223.5.5.5'],
+    'proxy-server-nameserver': ['https://dns.cloudflare.com/dns-query', 'https://dns.google/dns-query'],
     'direct-nameserver': ['https://dns.alidns.com/dns-query'],
     'nameserver-policy': {
       'geosite:cn,geolocation-cn,bilibili,biliintl': [
@@ -105,7 +105,7 @@ function overwriteGeneral(config) {
 }
 
 // ================================================================
-//  模块 B：判断是否为信息/过期节点（需排除）
+//  模块 B：判断是否为信息/过期节点
 // ================================================================
 
 function isInfoNode(name) {
@@ -114,7 +114,7 @@ function isInfoNode(name) {
 }
 
 // ================================================================
-//  模块 C：节点分类（简版 — 所有有效节点归入一个池）
+//  模块 C：节点分类
 // ================================================================
 
 function classifyAllNodes(proxies) {
@@ -394,23 +394,23 @@ function injectRules(config) {
   R.push('GEOSITE,category-dev,🎯 节点选择')
 
   // 苹果服务
+  R.push('DOMAIN-SUFFIX,icloud.com,DIRECT')
   R.push('RULE-SET,apple,🍎 苹果服务')
   R.push('DOMAIN-SUFFIX,apple.com.cn,🍎 苹果服务')
   R.push('DOMAIN-SUFFIX,icloud.com.cn,🍎 苹果服务')
-  R.push('DOMAIN-SUFFIX,icloud.com,DIRECT')
   R.push('DOMAIN-SUFFIX,mzstatic.com,🍎 苹果服务')
 
   // 微软服务
+  R.push('DOMAIN-SUFFIX,microsoft.com,DIRECT')
+  R.push('DOMAIN-SUFFIX,storeedge.microsoft.com,DIRECT')
+  R.push('DOMAIN-SUFFIX,mp.microsoft.com,DIRECT')
+  R.push('DOMAIN-SUFFIX,delivery.mp.microsoft.com,DIRECT')
   R.push('RULE-SET,microsoft,Ⓜ️ 微软服务')
   R.push('DOMAIN-SUFFIX,microsoft.cn,Ⓜ️ 微软服务')
   R.push('DOMAIN-SUFFIX,msftconnecttest.com,Ⓜ️ 微软服务')
   R.push('DOMAIN-SUFFIX,msn.com,Ⓜ️ 微软服务')
   R.push('DOMAIN-SUFFIX,live.com,Ⓜ️ 微软服务')
   R.push('DOMAIN-SUFFIX,sfx.ms,Ⓜ️ 微软服务')
-  R.push('DOMAIN-SUFFIX,microsoft.com,DIRECT')
-  R.push('DOMAIN-SUFFIX,storeedge.microsoft.com,DIRECT')
-  R.push('DOMAIN-SUFFIX,mp.microsoft.com,DIRECT')
-  R.push('DOMAIN-SUFFIX,delivery.mp.microsoft.com,DIRECT')
 
   // 国内直连
   var cnDomains = [
