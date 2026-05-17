@@ -57,7 +57,8 @@ function overwriteGeneral(config) {
     'skip-domain': [
       'Mijia Cloud',
       '+.oray.com',
-      '+.oray.net'
+      '+.oray.net',
+      '+.apple.com'
     ]
   }
 
@@ -258,6 +259,7 @@ function injectRules(config) {
 
   // QUIC 阻断
   R.push('AND,((DST-PORT,443),(NETWORK,UDP),(RULE-SET,microsoft)),Ⓜ️ 微软服务')
+  R.push('AND,((DST-PORT,443),(NETWORK,UDP),(RULE-SET,apple)),🍎 苹果服务')
   R.push('AND,((DST-PORT,443),(NETWORK,UDP),(NOT,((RULE-SET,cn_sites)))),REJECT')
 
   // 局域网 / 私有网络
@@ -425,7 +427,6 @@ function injectRules(config) {
   // Google .cn 防误伤
   R.push('DOMAIN-SUFFIX,services.googleapis.cn,🎯 节点选择')
   R.push('DOMAIN-SUFFIX,googleapis.cn,🎯 节点选择')
-  R.push('DOMAIN-SUFFIX,xn--ngstr-lra8j.com,🎯 节点选择')
 
   // 基础分流
   R.push('RULE-SET,gfw,🎯 节点选择')
