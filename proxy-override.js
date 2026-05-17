@@ -31,7 +31,7 @@ function overwriteGeneral(config) {
 
   if (!config.profile) config.profile = {}
   config.profile['store-selected'] = true
-  config.profile['store-fake-ip'] = true
+  config.profile['store-fake-ip'] = false
 
   config['geox-url'] = {
     geosite: 'https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geosite.dat',
@@ -55,7 +55,9 @@ function overwriteGeneral(config) {
       '+.workers.dev'
     ],
     'skip-domain': [
-      'debian.org'
+      'Mijia Cloud',
+      '+.oray.com',
+      '+.oray.net'
     ]
   }
 
@@ -83,7 +85,7 @@ function overwriteGeneral(config) {
       '+.battlenet.com.cn', '+.wotgame.cn', '+.wggames.cn', '+.wowsgame.cn',
     ],
     'default-nameserver': ['tls://223.5.5.5', 'tls://223.6.6.6'],
-    'proxy-server-nameserver': ['https://dns.cloudflare.com/dns-query', 'https://dns.google/dns-query'],
+    'proxy-server-nameserver': ['https://doh.pub/dns-query', 'tls://223.5.5.5'],
     'direct-nameserver': ['https://dns.alidns.com/dns-query'],
     'nameserver-policy': {
       'geosite:cn,geolocation-cn,bilibili,biliintl': [
@@ -94,9 +96,7 @@ function overwriteGeneral(config) {
     },
     nameserver: ['https://dns.cloudflare.com/dns-query', 'https://dns.google/dns-query'],
     'respect-rules': true,
-    'direct-nameserver-follow-policy': true,
-    fallback: [],
-    'fallback-filter': { geoip: false }
+    'direct-nameserver-follow-policy': true
   }
 }
 
@@ -106,7 +106,7 @@ function overwriteGeneral(config) {
 
 function isInfoNode(name) {
   if (!name || typeof name !== 'string') return true
-  return /(剩余|到期|官网|套餐|流量|网址|地址|过期|重置|更新|测速|应急|免费|试用|Sign|Login|Register|Help|FAQ|客服|联系|网站)/i.test(name)
+  return /(剩余|到期|官网|套餐|流量|网址|地址|过期|重置|更新|应急|免费|试用|Sign|Login|Register|Help|FAQ|客服|联系|网站)/i.test(name)
 }
 
 // ================================================================
@@ -208,7 +208,7 @@ function injectRuleProviders(config) {
 
   RP['anti-ad'] = { type: 'http', behavior: 'domain', format: 'mrs',
     url: 'https://fastly.jsdelivr.net/gh/DustinWin/ruleset_geodata@mihomo-ruleset/ads.mrs',
-    path: './ruleset/anti-ad.mrs', interval: 85515, proxy: '🐟 漏网之鱼' }
+    path: './ruleset/anti-ad.mrs', interval: 85515, proxy: 'DIRECT' }
 
   RP['openai'] = { type: 'http', behavior: 'domain', format: 'mrs',
     url: 'https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/openai.mrs',
@@ -220,7 +220,7 @@ function injectRuleProviders(config) {
 
   RP['github'] = { type: 'http', behavior: 'domain', format: 'mrs',
     url: 'https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/github.mrs',
-    path: './ruleset/meta-github.mrs', interval: 85635, proxy: '🐟 漏网之鱼' }
+    path: './ruleset/meta-github.mrs', interval: 85635, proxy: 'DIRECT' }
 
   RP['microsoft'] = { type: 'http', behavior: 'domain', format: 'mrs',
     url: 'https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/microsoft.mrs',
@@ -232,15 +232,15 @@ function injectRuleProviders(config) {
 
   RP['proxy_sites'] = { type: 'http', behavior: 'domain', format: 'mrs',
     url: 'https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/geolocation-!cn.mrs',
-    path: './ruleset/proxy_sites.mrs', interval: 86415, proxy: '🐟 漏网之鱼' }
+    path: './ruleset/proxy_sites.mrs', interval: 86415, proxy: 'DIRECT' }
 
   RP['cn_sites'] = { type: 'http', behavior: 'domain', format: 'mrs',
     url: 'https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/cn.mrs',
-    path: './ruleset/cn_sites.mrs', interval: 86430, proxy: '🐟 漏网之鱼' }
+    path: './ruleset/cn_sites.mrs', interval: 86430, proxy: 'DIRECT' }
 
   RP['gfw'] = { type: 'http', behavior: 'domain', format: 'mrs',
     url: 'https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/gfw.mrs',
-    path: './ruleset/meta-gfw.mrs', interval: 86445, proxy: '🐟 漏网之鱼' }
+    path: './ruleset/meta-gfw.mrs', interval: 86445, proxy: 'DIRECT' }
 
   log('[' + VERSION + '] Injected ' + Object.keys(RP).length + ' rule-providers')
 }
@@ -250,8 +250,6 @@ function injectRuleProviders(config) {
 // ================================================================
 
 function injectRules(config) {
-  config.rules.splice(0, config.rules.length)
-
   var R = config.rules
 
   // 广告拦截
@@ -269,7 +267,7 @@ function injectRules(config) {
   R.push('DOMAIN,localhost,DIRECT')
   R.push('DOMAIN-SUFFIX,local,DIRECT')
 
-  // 进程名直连
+  // 进程名直连（仅 Windows 平台生效；其他平台静默跳过，流量由后续规则接管）
   var localProcesses = [
     'WinStore.App.exe', 'WinStore.Mobile.exe',
     'Weixin.exe', 'WeChat.exe', 'WeChatAppEx.exe', 'QQ.exe',
@@ -369,7 +367,7 @@ function injectRules(config) {
   // 开发工具
   R.push('RULE-SET,github,🎯 节点选择')
   var devDomains = [
-    'github.com', 'githubassets.com', 'githubusercontent.com', 'ghcr.io', 'github.io',
+    'ghcr.io', 'github.io',
     'docker.io', 'docker.com',
     'repo.maven.apache.org', 'maven.apache.org',
     'jetbrains.com', 'jetbrains.space', 'jetbrains.net',
@@ -399,7 +397,6 @@ function injectRules(config) {
   // 微软服务
   R.push('DOMAIN-SUFFIX,storeedge.microsoft.com,DIRECT')
   R.push('DOMAIN-SUFFIX,mp.microsoft.com,DIRECT')
-  R.push('DOMAIN-SUFFIX,delivery.mp.microsoft.com,DIRECT')
   R.push('RULE-SET,microsoft,Ⓜ️ 微软服务')
   R.push('DOMAIN-SUFFIX,microsoft.cn,Ⓜ️ 微软服务')
   R.push('DOMAIN-SUFFIX,msftconnecttest.com,Ⓜ️ 微软服务')
@@ -468,3 +465,5 @@ function main(config) {
   }
   return config
 }
+
+if (typeof globalThis !== 'undefined') globalThis.main = main
