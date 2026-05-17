@@ -7,6 +7,9 @@
 ## 目录
 
 - [快速开始](#快速开始)
+  - [JS 覆写版（推荐，支持节点过滤）](#js-覆写版推荐支持节点过滤)
+  - [YAML 配置版（独立使用，免脚本）](#yaml-配置版独立使用免脚本)
+- [两种版本对比](#两种版本对比)
 - [架构设计](#架构设计)
 - [DNS 技术细节](#dns-技术细节)
 - [策略组](#策略组)
@@ -18,9 +21,11 @@
 
 ## 快速开始
 
-**前提**：FLClash ≥ v0.8.85，已导入机场订阅。
+**前提**：FLClash ≥ v0.8.85（或任意 Mihomo 客户端），已导入机场订阅。
 
-### 第 1 步：导入覆写脚本
+### JS 覆写版（推荐，支持节点过滤）
+
+FLClash 用户推荐此版本——通过 JS 脚本动态过滤信息节点、按实际节点数量构建策略组。
 
 FLClash → 右下角 **工具** → **进阶设置** → **脚本** → 右上角 **+** → 右上角 **⋮** → **外部获取** → **通过 URL 导入** → 粘贴以下地址：
 
@@ -40,6 +45,55 @@ FLClash → **配置** → 点击机场订阅右侧的 **⋮** → **更多** �
 - `⚡ 自动选择` 是否包含订阅节点
 - DNS 查询日志中是否出现 `tls://` 或 `https://` 前缀
 - GeoX 文件是否自动下载（`geosite.dat` / `geoip.dat`）
+
+### YAML 配置版（独立使用，免脚本）
+
+适用于 Clash Verge Rev / Mihomo Party 等非 FLClash 客户端，或以完整配置文件方式部署。
+
+**第 1 步：下载 YAML 配置文件**
+
+```
+https://raw.githubusercontent.com/Sgraqwq/Proxy-override/main/proxy-override.yaml
+```
+
+**第 2 步：编辑订阅地址**
+
+打开 `proxy-override.yaml`，找到 `proxy-providers` 段落，将 `sub.url` 替换为你的机场订阅链接：
+
+```yaml
+proxy-providers:
+  sub:
+    type: http
+    url: "https://你的机场订阅链接"   # ← 替换这里
+```
+
+**第 3 步：加载配置**
+
+- **Clash Verge Rev**：配置 → 新建 → 粘贴 YAML 内容 → 保存，也可直接导入文件
+- **Mihomo Party**：配置 → 导入 → 选择 `proxy-override.yaml`
+- **ShellCrash / OpenWrt**：将文件放置到 `/etc/mihomo/config.yaml` → 重启服务
+
+**第 4 步：验证**
+
+- 策略组是否正确加载（检查 `🎯 节点选择` / `🤖 AI 服务` 等）
+- `⚡ 自动选择` 是否包含订阅节点
+- 规则集文件是否下载到 `./ruleset/` 目录
+
+> **注意**：YAML 版的 `proxy-provider` 无法像 JS 覆写版那样用正则过滤"剩余/到期/官网/免费"等信息节点（Mihomo RE2 正则引擎不支持负向排除）。如果订阅含大量信息节点，建议使用 JS 覆写版。
+
+## 两种版本对比
+
+| 特性 | JS 覆写版 | YAML 配置版 |
+|------|----------|------------|
+| 文件 | `proxy-override.js` | `proxy-override.yaml` |
+| 适用客户端 | FLClash（推荐） | 所有 Mihomo 客户端 |
+| 节点来源 | 订阅 `proxies` 数组 | `proxy-provider` 拉取 |
+| 信息节点过滤 | ✅ 正则过滤 | ❌ YAML 无法实现 |
+| 策略组动态构建 | ✅ 按实际节点数 | ⚠️ 固定 `use` 引用 |
+| 部署复杂度 | FLClash 两步骤 | 替换订阅链接即可 |
+| 自定义便捷度 | 编辑 JS 函数 | 编辑 YAML 字段 |
+
+**推荐**：FLClash 用户首选 JS 覆写版；其他客户端或偏好独立配置文件的用户使用 YAML 版。
 
 ## 架构设计
 

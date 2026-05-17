@@ -1,0 +1,640 @@
+# FlClash / Mihomo 通用覆写配置（独立 YAML 版本）
+# 版本：v2.0 (2026-05-18)
+# 架构：3 基础设施组 + 9 业务策略组 + 9 rule-providers + 全加密 DNS
+# 适用：Mihomo / Clash.Meta 内核；任何机场订阅
+# 对应 JS 覆写脚本：proxy-override.js
+#
+# === 导入方法 ===
+#
+# 将本文件作为 Mihomo 配置文件加载（或与现有配置合并）。
+# 必须将 proxy-providers.sub.url 替换为你的机场订阅链接。
+#
+# ================================================================
+
+# ================================================================
+#  全局参数
+# ================================================================
+
+unified-delay: true
+tcp-concurrent: true
+find-process-mode: strict
+keep-alive-idle: 30
+keep-alive-interval: 15
+
+profile:
+  store-selected: true
+  store-fake-ip: false
+
+geox-url:
+  geosite: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geosite.dat
+  geoip: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip.dat
+  geoip-mmdb: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip.metadb
+
+# ================================================================
+#  端口 / SOCKS / 混合入站
+# ================================================================
+
+mixed-port: 7890
+allow-lan: false
+mode: rule
+log-level: info
+external-controller: 127.0.0.1:9090
+
+# ================================================================
+#  Sniffer 嗅探
+# ================================================================
+
+sniffer:
+  enable: true
+  force-dns-mapping: true
+  parse-pure-ip: true
+  override-destination: true
+  sniff:
+    TLS:
+      ports: [443, 8443]
+    HTTP:
+      ports: [80, 8080-8880]
+    QUIC:
+      ports: [443, 8443]
+  force-domain:
+    - +.netlify.app
+    - +.vercel.app
+    - +.workers.dev
+  skip-domain:
+    - Mijia Cloud
+    - +.oray.com
+    - +.oray.net
+    - +.apple.com
+
+# ================================================================
+#  DNS 全加密
+# ================================================================
+
+dns:
+  enable: true
+  listen: 127.0.0.1:1053
+  ipv6: false
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - +.lan
+    - +.local
+    - +.localhost
+    - +.direct
+    - +.msftconnecttest.com
+    - +.msftncsi.com
+    - +.baidu.com
+    - +.bilibili.com
+    - +.bing.com
+    - +.chiphell.com
+    - +.oray.com
+    - +.sunlogin.com
+    - +.todesk.com
+    - +.rustdesk.com
+    - +.teamviewer.com
+    - +.anydesk.com
+    - +.tailscale.com
+    - +.zerotier.com
+    - +.nvidia.com
+    - +.ntp.org
+    - +.pool.ntp.org
+    - time.*.com
+    - ntp.*.com
+    - time.*.gov
+    - time.*.apple.com
+    - time.windows.com
+    - time.nist.gov
+    - +.stun.*
+    - +.stun.*.*
+    - +.stun.*.*.*
+    - stun.*
+    - ip.cip.cc
+    - captive.apple.com
+    - connectivitycheck.gstatic.com
+    - id6.me
+    - localhost.ptlogin2.qq.com
+    - +.cmpassport.com
+    - +.mcdn.bilivideo.cn
+    - +.battlenet.com.cn
+    - +.wotgame.cn
+    - +.wggames.cn
+    - +.wowsgame.cn
+  default-nameserver:
+    - tls://223.5.5.5
+    - tls://223.6.6.6
+  proxy-server-nameserver:
+    - https://doh.pub/dns-query
+    - tls://223.5.5.5
+  direct-nameserver:
+    - https://dns.alidns.com/dns-query
+  nameserver-policy:
+    geosite:cn,geolocation-cn,bilibili,biliintl:
+      - https://dns.alidns.com/dns-query
+      - https://doh.pub/dns-query
+      - tls://223.5.5.5
+      - tls://223.6.6.6
+    aistudio.google.com:
+      - https://dns.cloudflare.com/dns-query
+      - https://dns.google/dns-query
+  nameserver:
+    - https://dns.cloudflare.com/dns-query
+    - https://dns.google/dns-query
+  respect-rules: true
+  direct-nameserver-follow-policy: true
+
+# ================================================================
+#  代理订阅（proxy-provider）
+# ================================================================
+#  替换 sub.url 为你的机场订阅链接
+#  如机场订阅本身就是 Clash 兼容格式，type 保持 http
+#  如机场提供 SS/SSR/Vmess 链接，需后端转换后使用
+#
+#  节点名过滤说明：
+#  Mihomo 的 RE2 正则引擎不支持负向零宽断言 (?!...)，
+#  无法像 JS 覆写脚本那样在 YAML 中排除"剩余/到期/官网/免费"等
+#  信息节点。如果订阅含大量信息节点，建议：
+#    1) 使用 proxy-override.js 覆写脚本版本（支持 isInfoNode 过滤）
+#    2) 或在机场侧清理无效节点
+#    3) 或手动编辑 proxy-providers/sub.yaml 缓存文件删除信息节点行
+
+proxy-providers:
+  sub:
+    type: http
+    url: "https://你的机场订阅链接"
+    path: ./proxy-providers/sub.yaml
+    interval: 3600
+    health-check:
+      enable: true
+      url: http://www.gstatic.com/generate_204
+      interval: 300
+
+# ================================================================
+#  连接代理（手动添加的独立节点，可选）
+# ================================================================
+
+proxies: []
+  # - name: "手动节点示例"
+  #   type: ss
+  #   server: example.com
+  #   port: 443
+  #   cipher: aes-256-gcm
+  #   password: "your-password"
+
+# ================================================================
+#  策略组
+# ================================================================
+
+proxy-groups:
+  # --- 基础设施组（3 个）---
+
+  - name: 🎯 节点选择
+    type: select
+    use:
+      - sub
+    proxies:
+      - ⚡ 自动选择
+      - 🔄 故障转移
+      - DIRECT
+
+  - name: ⚡ 自动选择
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    tolerance: 150
+    lazy: true
+    use:
+      - sub
+    # filter 可选：限制参与测速的节点名正则（RE2 语法）
+    # filter: ".*"
+
+  - name: 🔄 故障转移
+    type: fallback
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    lazy: true
+    use:
+      - sub
+
+  # --- 业务策略组（9 个）---
+
+  - name: 🤖 AI 服务
+    type: select
+    use:
+      - sub
+    proxies:
+      - 🎯 节点选择
+      - ⚡ 自动选择
+      - 🔄 故障转移
+      - DIRECT
+
+  - name: 📹 YouTube
+    type: select
+    use:
+      - sub
+    proxies:
+      - 🎯 节点选择
+      - ⚡ 自动选择
+      - 🔄 故障转移
+      - DIRECT
+
+  - name: ✈️ Telegram
+    type: select
+    use:
+      - sub
+    proxies:
+      - 🎯 节点选择
+      - ⚡ 自动选择
+      - 🔄 故障转移
+      - DIRECT
+
+  - name: 🎬 流媒体
+    type: select
+    use:
+      - sub
+    proxies:
+      - 🎯 节点选择
+      - ⚡ 自动选择
+      - 🔄 故障转移
+      - DIRECT
+
+  - name: 🍎 苹果服务
+    type: select
+    use:
+      - sub
+    proxies:
+      - DIRECT
+      - 🎯 节点选择
+      - ⚡ 自动选择
+      - 🔄 故障转移
+
+  - name: Ⓜ️ 微软服务
+    type: select
+    use:
+      - sub
+    proxies:
+      - DIRECT
+      - 🎯 节点选择
+      - ⚡ 自动选择
+      - 🔄 故障转移
+
+  - name: 🏠 国内直连
+    type: select
+    proxies:
+      - DIRECT
+
+  - name: 🛑 广告拦截
+    type: select
+    proxies:
+      - REJECT
+      - DIRECT
+
+  - name: 🐟 漏网之鱼
+    type: select
+    use:
+      - sub
+    proxies:
+      - 🎯 节点选择
+      - ⚡ 自动选择
+      - 🔄 故障转移
+      - DIRECT
+      - REJECT
+
+# ================================================================
+#  远程规则集（9 个 MRS）
+# ================================================================
+
+rule-providers:
+  anti-ad:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/DustinWin/ruleset_geodata@mihomo-ruleset/ads.mrs
+    path: ./ruleset/anti-ad.mrs
+    interval: 85515
+
+  openai:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/openai.mrs
+    path: ./ruleset/meta-openai.mrs
+    interval: 85530
+
+  tiktok:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/tiktok.mrs
+    path: ./ruleset/meta-tiktok.mrs
+    interval: 85575
+
+  github:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/github.mrs
+    path: ./ruleset/meta-github.mrs
+    interval: 85635
+
+  microsoft:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/microsoft.mrs
+    path: ./ruleset/meta-microsoft.mrs
+    interval: 85650
+
+  apple:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/apple.mrs
+    path: ./ruleset/meta-apple.mrs
+    interval: 85665
+
+  proxy_sites:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/geolocation-!cn.mrs
+    path: ./ruleset/proxy_sites.mrs
+    interval: 86415
+
+  cn_sites:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/cn.mrs
+    path: ./ruleset/cn_sites.mrs
+    interval: 86430
+
+  gfw:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/gfw.mrs
+    path: ./ruleset/meta-gfw.mrs
+    interval: 86445
+
+# ================================================================
+#  分流规则（216 条）
+# ================================================================
+
+rules:
+  # --- 广告拦截 ---
+  - GEOSITE,category-ads-all,🛑 广告拦截
+  - RULE-SET,anti-ad,🛑 广告拦截
+
+  # --- QUIC 阻断（微软/苹果豁免，其余非中国站点 REJECT）---
+  - AND,((DST-PORT,443),(NETWORK,UDP),(RULE-SET,microsoft)),Ⓜ️ 微软服务
+  - AND,((DST-PORT,443),(NETWORK,UDP),(RULE-SET,apple)),🍎 苹果服务
+  - AND,((DST-PORT,443),(NETWORK,UDP),(NOT,((RULE-SET,cn_sites)))),REJECT
+
+  # --- 局域网 / 私有网络 ---
+  - DST-PORT,7680,REJECT
+  - GEOSITE,private,DIRECT
+  - GEOIP,private,DIRECT,no-resolve
+  - DOMAIN,localhost,DIRECT
+  - DOMAIN-SUFFIX,local,DIRECT
+
+  # --- 进程名直连（仅 Windows 平台 TUN 模式生效）---
+  - PROCESS-NAME,WinStore.App.exe,DIRECT
+  - PROCESS-NAME,WinStore.Mobile.exe,DIRECT
+  - PROCESS-NAME,Weixin.exe,DIRECT
+  - PROCESS-NAME,WeChat.exe,DIRECT
+  - PROCESS-NAME,WeChatAppEx.exe,DIRECT
+  - PROCESS-NAME,QQ.exe,DIRECT
+  - PROCESS-NAME,SunloginClient.exe,DIRECT
+  - PROCESS-NAME,ToDesk.exe,DIRECT
+  - PROCESS-NAME,ToDesk_Service.exe,DIRECT
+  - PROCESS-NAME,rustdesk.exe,DIRECT
+  - PROCESS-NAME,TeamViewer.exe,DIRECT
+  - PROCESS-NAME,AnyDesk.exe,DIRECT
+  - PROCESS-NAME,tailscale.exe,DIRECT
+  - PROCESS-NAME,tailscaled.exe,DIRECT
+  - PROCESS-NAME,frpc.exe,DIRECT
+  - PROCESS-NAME,Navicat.exe,DIRECT
+  - PROCESS-NAME,cloudflared.exe,DIRECT
+
+  # --- 前置拦截（确保规则集和 DNS 下载可用）---
+  - DOMAIN-SUFFIX,jsdelivr.net,🎯 节点选择
+  - DOMAIN,dns.google,🎯 节点选择
+  - DOMAIN,dns.google.com,🎯 节点选择
+
+  # --- YouTube ---
+  - DOMAIN-SUFFIX,youtube.com,📹 YouTube
+  - DOMAIN-SUFFIX,youtu.be,📹 YouTube
+  - DOMAIN-SUFFIX,googlevideo.com,📹 YouTube
+  - DOMAIN-SUFFIX,ytimg.com,📹 YouTube
+  - DOMAIN-SUFFIX,ggpht.com,📹 YouTube
+
+  # --- AI 服务 ---
+  - RULE-SET,openai,🤖 AI 服务
+  - DOMAIN-SUFFIX,chatgpt.com,🤖 AI 服务
+  - DOMAIN-SUFFIX,oaistatic.com,🤖 AI 服务
+  - DOMAIN-SUFFIX,oaiusercontent.com,🤖 AI 服务
+  - DOMAIN-SUFFIX,sora.com,🤖 AI 服务
+  - DOMAIN-SUFFIX,claude.ai,🤖 AI 服务
+  - DOMAIN-SUFFIX,anthropic.com,🤖 AI 服务
+  - DOMAIN-SUFFIX,ai.google.dev,🤖 AI 服务
+  - DOMAIN-SUFFIX,generativelanguage.googleapis.com,🤖 AI 服务
+  - DOMAIN-SUFFIX,mistral.ai,🤖 AI 服务
+  - DOMAIN-SUFFIX,perplexity.ai,🤖 AI 服务
+  - DOMAIN-SUFFIX,cohere.ai,🤖 AI 服务
+  - DOMAIN-SUFFIX,cohere.com,🤖 AI 服务
+  - DOMAIN-SUFFIX,midjourney.com,🤖 AI 服务
+  - DOMAIN-SUFFIX,stability.ai,🤖 AI 服务
+  - DOMAIN-SUFFIX,cursor.com,🤖 AI 服务
+  - DOMAIN-SUFFIX,cursor.sh,🤖 AI 服务
+  - DOMAIN-SUFFIX,huggingface.co,🤖 AI 服务
+  - DOMAIN-SUFFIX,replicate.com,🤖 AI 服务
+  - DOMAIN-SUFFIX,together.ai,🤖 AI 服务
+  - DOMAIN-SUFFIX,suno.ai,🤖 AI 服务
+  - DOMAIN-SUFFIX,suno.com,🤖 AI 服务
+  - DOMAIN-SUFFIX,openrouter.ai,🤖 AI 服务
+  - DOMAIN-SUFFIX,runpod.io,🤖 AI 服务
+  - DOMAIN-SUFFIX,x.ai,🤖 AI 服务
+  - DOMAIN-SUFFIX,grok.com,🤖 AI 服务
+  - DOMAIN-SUFFIX,copilot.microsoft.com,🤖 AI 服务
+
+  # --- Google 基础服务（在 AI 之后，避免遮蔽特定 API 子域名）---
+  - DOMAIN-SUFFIX,gstatic.com,🎯 节点选择
+  - DOMAIN-SUFFIX,googleapis.com,🎯 节点选择
+
+  # --- DeepSeek（国内直连）---
+  - DOMAIN-SUFFIX,deepseek.com,🏠 国内直连
+
+  # --- Telegram ---
+  - DOMAIN-SUFFIX,telegram.org,✈️ Telegram
+  - DOMAIN-SUFFIX,telegram.me,✈️ Telegram
+  - DOMAIN-SUFFIX,t.me,✈️ Telegram
+
+  # --- 海外社交 ---
+  - DOMAIN-SUFFIX,twitter.com,🎯 节点选择
+  - DOMAIN-SUFFIX,twimg.com,🎯 节点选择
+  - DOMAIN-SUFFIX,t.co,🎯 节点选择
+  - DOMAIN-SUFFIX,x.com,🎯 节点选择
+  - DOMAIN-SUFFIX,reddit.com,🎯 节点选择
+  - DOMAIN-SUFFIX,redd.it,🎯 节点选择
+  - DOMAIN-SUFFIX,facebook.com,🎯 节点选择
+  - DOMAIN-SUFFIX,fbcdn.net,🎯 节点选择
+  - DOMAIN-SUFFIX,instagram.com,🎯 节点选择
+  - DOMAIN-SUFFIX,cdninstagram.com,🎯 节点选择
+  - DOMAIN-SUFFIX,linkedin.com,🎯 节点选择
+  - DOMAIN-SUFFIX,licdn.com,🎯 节点选择
+  - DOMAIN-SUFFIX,snapchat.com,🎯 节点选择
+  - DOMAIN-SUFFIX,pinterest.com,🎯 节点选择
+  - DOMAIN-SUFFIX,threads.net,🎯 节点选择
+  - DOMAIN-SUFFIX,bsky.app,🎯 节点选择
+  - DOMAIN-SUFFIX,bsky.social,🎯 节点选择
+  - DOMAIN-SUFFIX,quora.com,🎯 节点选择
+  - DOMAIN-SUFFIX,medium.com,🎯 节点选择
+  - DOMAIN-SUFFIX,imgur.com,🎯 节点选择
+  - DOMAIN-SUFFIX,flickr.com,🎯 节点选择
+  - DOMAIN-SUFFIX,tumblr.com,🎯 节点选择
+  - DOMAIN-SUFFIX,pixiv.net,🎯 节点选择
+  - DOMAIN-SUFFIX,pximg.net,🎯 节点选择
+
+  # --- 流媒体 ---
+  - RULE-SET,tiktok,🎬 流媒体
+  - DOMAIN-SUFFIX,netflix.com,🎬 流媒体
+  - DOMAIN-SUFFIX,nflxvideo.net,🎬 流媒体
+  - DOMAIN-SUFFIX,nflxext.com,🎬 流媒体
+  - DOMAIN-SUFFIX,spotify.com,🎬 流媒体
+  - DOMAIN-SUFFIX,scdn.co,🎬 流媒体
+  - DOMAIN-SUFFIX,spotifycdn.com,🎬 流媒体
+  - DOMAIN-SUFFIX,hulu.com,🎬 流媒体
+  - DOMAIN-SUFFIX,hbomax.com,🎬 流媒体
+  - DOMAIN-SUFFIX,max.com,🎬 流媒体
+  - DOMAIN-SUFFIX,disneyplus.com,🎬 流媒体
+  - DOMAIN-SUFFIX,bamgrid.com,🎬 流媒体
+  - DOMAIN-SUFFIX,primevideo.com,🎬 流媒体
+  - DOMAIN-SUFFIX,amazonprime.com,🎬 流媒体
+  - DOMAIN-SUFFIX,twitch.tv,🎬 流媒体
+  - DOMAIN-SUFFIX,discoveryplus.com,🎬 流媒体
+  - DOMAIN-SUFFIX,paramountplus.com,🎬 流媒体
+  - DOMAIN-SUFFIX,peacocktv.com,🎬 流媒体
+  - DOMAIN-SUFFIX,vimeo.com,🎬 流媒体
+  - DOMAIN-SUFFIX,dailymotion.com,🎬 流媒体
+  - DOMAIN-SUFFIX,crunchyroll.com,🎬 流媒体
+
+  # --- 游戏平台 ---
+  - DOMAIN-SUFFIX,steampowered.com,🎯 节点选择
+  - DOMAIN-SUFFIX,steamcommunity.com,🎯 节点选择
+  - DOMAIN-SUFFIX,steamcdn-a.akamaihd.net,🎯 节点选择
+  - DOMAIN-SUFFIX,epicgames.com,🎯 节点选择
+  - DOMAIN-SUFFIX,ea.com,🎯 节点选择
+  - DOMAIN-SUFFIX,origin.com,🎯 节点选择
+  - DOMAIN-SUFFIX,ubisoft.com,🎯 节点选择
+  - DOMAIN-SUFFIX,ubi.com,🎯 节点选择
+  - DOMAIN-SUFFIX,riotgames.com,🎯 节点选择
+  - DOMAIN-SUFFIX,leagueoflegends.com,🎯 节点选择
+  - DOMAIN-SUFFIX,blizzard.com,🎯 节点选择
+  - DOMAIN-SUFFIX,battle.net,🎯 节点选择
+  - DOMAIN-SUFFIX,nintendo.com,🎯 节点选择
+  - DOMAIN-SUFFIX,playstation.com,🎯 节点选择
+  - DOMAIN-SUFFIX,xbox.com,🎯 节点选择
+  - DOMAIN-SUFFIX,xboxlive.com,🎯 节点选择
+  - DOMAIN-SUFFIX,hoyoverse.com,🎯 节点选择
+  - DOMAIN-SUFFIX,hoyolab.com,🎯 节点选择
+  - DOMAIN-SUFFIX,gog.com,🎯 节点选择
+  - DOMAIN-SUFFIX,rockstargames.com,🎯 节点选择
+
+  # --- 开发工具 ---
+  - RULE-SET,github,🎯 节点选择
+  - DOMAIN-SUFFIX,ghcr.io,🎯 节点选择
+  - DOMAIN-SUFFIX,github.io,🎯 节点选择
+  - DOMAIN-SUFFIX,docker.io,🎯 节点选择
+  - DOMAIN-SUFFIX,docker.com,🎯 节点选择
+  - DOMAIN-SUFFIX,repo.maven.apache.org,🎯 节点选择
+  - DOMAIN-SUFFIX,maven.apache.org,🎯 节点选择
+  - DOMAIN-SUFFIX,jetbrains.com,🎯 节点选择
+  - DOMAIN-SUFFIX,jetbrains.space,🎯 节点选择
+  - DOMAIN-SUFFIX,jetbrains.net,🎯 节点选择
+  - DOMAIN-SUFFIX,npmjs.org,🎯 节点选择
+  - DOMAIN-SUFFIX,npmjs.com,🎯 节点选择
+  - DOMAIN-SUFFIX,yarnpkg.com,🎯 节点选择
+  - DOMAIN-SUFFIX,pypi.org,🎯 节点选择
+  - DOMAIN-SUFFIX,pythonhosted.org,🎯 节点选择
+  - DOMAIN-SUFFIX,crates.io,🎯 节点选择
+  - DOMAIN-SUFFIX,rubygems.org,🎯 节点选择
+  - DOMAIN-SUFFIX,nuget.org,🎯 节点选择
+  - DOMAIN-SUFFIX,packagist.org,🎯 节点选择
+  - DOMAIN-SUFFIX,stackoverflow.com,🎯 节点选择
+  - DOMAIN-SUFFIX,stackexchange.com,🎯 节点选择
+  - DOMAIN-SUFFIX,vercel.com,🎯 节点选择
+  - DOMAIN-SUFFIX,vercel.app,🎯 节点选择
+  - DOMAIN-SUFFIX,netlify.com,🎯 节点选择
+  - DOMAIN-SUFFIX,netlify.app,🎯 节点选择
+  - DOMAIN-SUFFIX,pages.dev,🎯 节点选择
+  - DOMAIN-SUFFIX,workers.dev,🎯 节点选择
+  - DOMAIN-SUFFIX,gitlab.com,🎯 节点选择
+  - DOMAIN-SUFFIX,bitbucket.org,🎯 节点选择
+  - DOMAIN-SUFFIX,digitalocean.com,🎯 节点选择
+  - DOMAIN-SUFFIX,vultr.com,🎯 节点选择
+  - DOMAIN-SUFFIX,heroku.com,🎯 节点选择
+  - DOMAIN-SUFFIX,fly.io,🎯 节点选择
+  - DOMAIN-SUFFIX,render.com,🎯 节点选择
+  - DOMAIN-SUFFIX,sentry.io,🎯 节点选择
+  - DOMAIN-SUFFIX,postman.com,🎯 节点选择
+  - DOMAIN-SUFFIX,notion.so,🎯 节点选择
+  - DOMAIN-SUFFIX,figma.com,🎯 节点选择
+  - DOMAIN-SUFFIX,atlassian.com,🎯 节点选择
+  - DOMAIN-SUFFIX,hashicorp.com,🎯 节点选择
+  - DOMAIN-SUFFIX,terraform.io,🎯 节点选择
+  - GEOSITE,category-dev,🎯 节点选择
+
+  # --- 苹果服务 ---
+  - DOMAIN-SUFFIX,icloud.com,DIRECT
+  - RULE-SET,apple,🍎 苹果服务
+  - DOMAIN-SUFFIX,apple.com.cn,🍎 苹果服务
+  - DOMAIN-SUFFIX,icloud.com.cn,🍎 苹果服务
+  - DOMAIN-SUFFIX,mzstatic.com,🍎 苹果服务
+
+  # --- 微软服务 ---
+  - DOMAIN-SUFFIX,storeedge.microsoft.com,DIRECT
+  - DOMAIN-SUFFIX,mp.microsoft.com,DIRECT
+  - RULE-SET,microsoft,Ⓜ️ 微软服务
+  - DOMAIN-SUFFIX,microsoft.cn,Ⓜ️ 微软服务
+  - DOMAIN-SUFFIX,msftconnecttest.com,Ⓜ️ 微软服务
+  - DOMAIN-SUFFIX,msn.com,Ⓜ️ 微软服务
+  - DOMAIN-SUFFIX,live.com,Ⓜ️ 微软服务
+  - DOMAIN-SUFFIX,sfx.ms,Ⓜ️ 微软服务
+
+  # --- 国内直连 ---
+  - DOMAIN-SUFFIX,baidu.com,DIRECT
+  - DOMAIN-SUFFIX,bdstatic.com,DIRECT
+  - DOMAIN-SUFFIX,bilibili.com,DIRECT
+  - DOMAIN-SUFFIX,alicdn.com,DIRECT
+  - DOMAIN-SUFFIX,alipay.com,DIRECT
+  - DOMAIN-SUFFIX,taobao.com,DIRECT
+  - DOMAIN-SUFFIX,aliyuncs.com,DIRECT
+  - DOMAIN-SUFFIX,qcloud.com,DIRECT
+  - DOMAIN-SUFFIX,myqcloud.com,DIRECT
+  - DOMAIN-SUFFIX,feishu.cn,DIRECT
+  - DOMAIN-SUFFIX,dingtalk.com,DIRECT
+  - DOMAIN-SUFFIX,163.com,DIRECT
+  - DOMAIN-SUFFIX,126.com,DIRECT
+  - DOMAIN-SUFFIX,126.net,DIRECT
+  - DOMAIN-SUFFIX,chiphell.com,DIRECT
+
+  # --- 端口直连 ---
+  - DST-PORT,123,DIRECT
+  - DST-PORT,3478,DIRECT
+  - DST-PORT,3479,DIRECT
+  - DST-PORT,33068,DIRECT
+  - DST-PORT,6540,DIRECT
+  - DST-PORT,26880,DIRECT
+
+  # --- Google .cn 防误伤 ---
+  - DOMAIN-SUFFIX,services.googleapis.cn,🎯 节点选择
+  - DOMAIN-SUFFIX,googleapis.cn,🎯 节点选择
+
+  # --- 基础分流 ---
+  - RULE-SET,gfw,🎯 节点选择
+  - RULE-SET,cn_sites,🏠 国内直连
+  - RULE-SET,proxy_sites,🎯 节点选择
+  - GEOIP,CN,🏠 国内直连,no-resolve
+
+  # --- 最终匹配 ---
+  - MATCH,🐟 漏网之鱼
