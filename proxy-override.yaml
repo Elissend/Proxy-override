@@ -319,6 +319,7 @@ rule-providers:
     url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/openai.mrs
     path: ./ruleset/meta-openai.mrs
     interval: 85530
+    proxy: 🤖 AI 服务
 
   tiktok:
     type: http
@@ -327,6 +328,7 @@ rule-providers:
     url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/tiktok.mrs
     path: ./ruleset/meta-tiktok.mrs
     interval: 85575
+    proxy: 🎬 流媒体
 
   github:
     type: http
@@ -343,6 +345,7 @@ rule-providers:
     url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/microsoft.mrs
     path: ./ruleset/meta-microsoft.mrs
     interval: 85650
+    proxy: Ⓜ️ 微软服务
 
   apple:
     type: http
@@ -351,6 +354,7 @@ rule-providers:
     url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/apple.mrs
     path: ./ruleset/meta-apple.mrs
     interval: 85665
+    proxy: 🍎 苹果服务
 
   proxy_sites:
     type: http
