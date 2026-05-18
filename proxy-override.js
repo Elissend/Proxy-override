@@ -444,6 +444,7 @@ function injectRules(config) {
 
   // 基础分流
   R.push('RULE-SET,gfw,节点选择')
+  R.push('GEOSITE,cn,国内直连')
   R.push('RULE-SET,cn_sites,国内直连')
   R.push('RULE-SET,proxy_sites,节点选择')
   R.push('GEOIP,CN,国内直连,no-resolve')
