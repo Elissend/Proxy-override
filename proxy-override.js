@@ -262,6 +262,12 @@ function injectRuleProviders(config) {
 function injectRules(config) {
   var R = config.rules
 
+  // 微信小程序基础设施（anti-ad 规则集可能误伤 *.wxs.qq.com 等子域名，优先放行）
+  R.push('DOMAIN-SUFFIX,wxs.qq.com,DIRECT')
+  R.push('DOMAIN-SUFFIX,wx.qlogo.cn,DIRECT')
+  R.push('DOMAIN-SUFFIX,servicewechat.com,DIRECT')
+  R.push('DOMAIN-SUFFIX,mp.weixin.qq.com,DIRECT')
+
   // 广告拦截
   R.push('GEOSITE,category-ads-all,广告拦截')
   R.push('RULE-SET,anti-ad,广告拦截')
@@ -418,7 +424,8 @@ function injectRules(config) {
     'alicdn.com', 'alipay.com', 'taobao.com', 'aliyuncs.com',
     'qcloud.com', 'myqcloud.com',
     'feishu.cn', 'dingtalk.com',
-    '163.com', '126.com', '126.net', 'chiphell.com'
+    '163.com', '126.com', '126.net', 'chiphell.com',
+    'xindazhilian.com'
   ]
   for (var c = 0; c < cnDomains.length; c++) {
     R.push('DOMAIN-SUFFIX,' + cnDomains[c] + ',DIRECT')

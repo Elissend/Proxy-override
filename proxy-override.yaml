@@ -411,6 +411,12 @@ rule-providers:
 # ================================================================
 
 rules:
+  # --- 微信小程序基础设施（anti-ad 规则集可能误伤 *.wxs.qq.com，优先放行）---
+  - DOMAIN-SUFFIX,wxs.qq.com,DIRECT
+  - DOMAIN-SUFFIX,wx.qlogo.cn,DIRECT
+  - DOMAIN-SUFFIX,servicewechat.com,DIRECT
+  - DOMAIN-SUFFIX,mp.weixin.qq.com,DIRECT
+
   # --- 广告拦截 ---
   - GEOSITE,category-ads-all,广告拦截
   - RULE-SET,anti-ad,广告拦截
@@ -620,6 +626,7 @@ rules:
   - DOMAIN-SUFFIX,126.com,DIRECT
   - DOMAIN-SUFFIX,126.net,DIRECT
   - DOMAIN-SUFFIX,chiphell.com,DIRECT
+  - DOMAIN-SUFFIX,xindazhilian.com,DIRECT
 
   # --- 端口直连 ---
   - DST-PORT,123,DIRECT
