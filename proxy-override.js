@@ -338,6 +338,10 @@ function injectRules(config) {
 
   // 流媒体
   R.push('RULE-SET,tiktok,🎬 流媒体')
+
+  // 字节跳动海外（非 TikTok 的海外业务/基础设施，必须在 cn_sites 之前）
+  R.push('GEOSITE,bytedance@!cn,🎯 节点选择')
+
   var streamDomains = [
     'netflix.com', 'nflxvideo.net', 'nflxext.com',
     'spotify.com', 'scdn.co', 'spotifycdn.com',

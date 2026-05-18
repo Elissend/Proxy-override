@@ -517,6 +517,10 @@ rules:
 
   # --- 流媒体 ---
   - RULE-SET,tiktok,🎬 流媒体
+
+  # --- 字节跳动海外（非 TikTok 的海外业务/基础设施，必须在 cn_sites 之前）---
+  - GEOSITE,bytedance@!cn,🎯 节点选择
+
   - DOMAIN-SUFFIX,netflix.com,🎬 流媒体
   - DOMAIN-SUFFIX,nflxvideo.net,🎬 流媒体
   - DOMAIN-SUFFIX,nflxext.com,🎬 流媒体
