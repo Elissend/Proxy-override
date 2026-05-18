@@ -332,7 +332,7 @@ function injectRules(config) {
   R.push('GEOSITE,facebook,节点选择')
   R.push('GEOSITE,instagram,节点选择')
   R.push('GEOSITE,linkedin,节点选择')
-  R.push('DOMAIN-SUFFIX,snapchat.com,节点选择')
+  R.push('DOMAIN-SUFFIX,snapchat.com,节点选择')  // snapchat 无 GEOSITE 分类
   R.push('GEOSITE,pinterest,节点选择')
   R.push('GEOSITE,threads,节点选择')
   R.push('GEOSITE,bluesky,节点选择')
@@ -363,6 +363,7 @@ function injectRules(config) {
   R.push('GEOSITE,twitch,流媒体')
   R.push('GEOSITE,vimeo,流媒体')
   R.push('GEOSITE,dailymotion,流媒体')
+  // 以下 4 项无 GEOSITE 分类，保留硬编码
   R.push('DOMAIN-SUFFIX,discoveryplus.com,流媒体')
   R.push('DOMAIN-SUFFIX,paramountplus.com,流媒体')
   R.push('DOMAIN-SUFFIX,peacocktv.com,流媒体')

@@ -501,7 +501,7 @@ rules:
   - GEOSITE,facebook,节点选择
   - GEOSITE,instagram,节点选择
   - GEOSITE,linkedin,节点选择
-  - DOMAIN-SUFFIX,snapchat.com,节点选择
+  - DOMAIN-SUFFIX,snapchat.com,节点选择  # snapchat 无 GEOSITE 分类
   - GEOSITE,pinterest,节点选择
   - GEOSITE,threads,节点选择
   - GEOSITE,bluesky,节点选择
@@ -534,6 +534,7 @@ rules:
   - GEOSITE,twitch,流媒体
   - GEOSITE,vimeo,流媒体
   - GEOSITE,dailymotion,流媒体
+  # 以下 4 项无 GEOSITE 分类，保留硬编码
   - DOMAIN-SUFFIX,discoveryplus.com,流媒体
   - DOMAIN-SUFFIX,paramountplus.com,流媒体
   - DOMAIN-SUFFIX,peacocktv.com,流媒体
