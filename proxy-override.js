@@ -142,16 +142,17 @@ function upsertGroup(config, group) {
 
 function buildProxyGroups(config, c) {
   var allNodes = c.ALL.slice()
+  var ICON = 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/'
 
   upsertGroup(config, {
     name: '节点选择', type: 'select',
-    icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Manual.png',
+    icon: ICON + 'Manual.png',
     proxies: ['自动选择', '故障转移'].concat(allNodes).concat(['DIRECT'])
   })
 
   upsertGroup(config, {
     name: '自动选择', type: 'url-test',
-    icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Auto.png',
+    icon: ICON + 'Auto.png',
     url: 'http://www.gstatic.com/generate_204',
     interval: 300, tolerance: 150, lazy: true,
     proxies: allNodes.slice()
@@ -159,7 +160,7 @@ function buildProxyGroups(config, c) {
 
   upsertGroup(config, {
     name: '故障转移', type: 'fallback',
-    icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Round_Robin.png',
+    icon: ICON + 'Round_Robin.png',
     url: 'http://www.gstatic.com/generate_204',
     interval: 300, lazy: true,
     proxies: allNodes.slice()
@@ -168,20 +169,20 @@ function buildProxyGroups(config, c) {
   // 业务策略组 — 节点选择排最前，后面跟全部节点
   var bizGroup = ['节点选择', '自动选择', '故障转移'].concat(allNodes).concat(['DIRECT'])
 
-  upsertGroup(config, { name: 'AI 服务',   type: 'select', icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Bot.png', proxies: bizGroup.slice() })
-  upsertGroup(config, { name: 'YouTube',   type: 'select', icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/YouTube.png', proxies: bizGroup.slice() })
-  upsertGroup(config, { name: 'Telegram',  type: 'select', icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Telegram.png', proxies: bizGroup.slice() })
-  upsertGroup(config, { name: '流媒体',    type: 'select', icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/ForeignMedia.png', proxies: bizGroup.slice() })
+  upsertGroup(config, { name: 'AI 服务',   type: 'select', icon: ICON + 'Bot.png',          proxies: bizGroup.slice() })
+  upsertGroup(config, { name: 'YouTube',   type: 'select', icon: ICON + 'YouTube.png',      proxies: bizGroup.slice() })
+  upsertGroup(config, { name: 'Telegram',  type: 'select', icon: ICON + 'Telegram.png',     proxies: bizGroup.slice() })
+  upsertGroup(config, { name: '流媒体',    type: 'select', icon: ICON + 'ForeignMedia.png', proxies: bizGroup.slice() })
 
   var appleGroup = ['DIRECT', '节点选择', '自动选择', '故障转移'].concat(allNodes)
-  upsertGroup(config, { name: '苹果服务', type: 'select', icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Apple.png', proxies: appleGroup.slice() })
-  upsertGroup(config, { name: '微软服务', type: 'select', icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Microsoft.png', proxies: appleGroup.slice() })
+  upsertGroup(config, { name: '苹果服务', type: 'select', icon: ICON + 'Apple.png',     proxies: appleGroup.slice() })
+  upsertGroup(config, { name: '微软服务', type: 'select', icon: ICON + 'Microsoft.png', proxies: appleGroup.slice() })
 
-  upsertGroup(config, { name: '国内直连', type: 'select', icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Direct.png', proxies: ['DIRECT'] })
-  upsertGroup(config, { name: '广告拦截', type: 'select', icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/AdBlack.png', proxies: ['REJECT', 'DIRECT'] })
+  upsertGroup(config, { name: '国内直连', type: 'select', icon: ICON + 'Direct.png',  proxies: ['DIRECT'] })
+  upsertGroup(config, { name: '广告拦截', type: 'select', icon: ICON + 'AdBlack.png', proxies: ['REJECT', 'DIRECT'] })
 
   var finalGroup = ['节点选择', '自动选择', '故障转移'].concat(allNodes).concat(['DIRECT', 'REJECT'])
-  upsertGroup(config, { name: '漏网之鱼', type: 'select', icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Available.png', proxies: finalGroup.slice() })
+  upsertGroup(config, { name: '漏网之鱼', type: 'select', icon: ICON + 'Available.png', proxies: finalGroup.slice() })
 }
 
 // ================================================================
