@@ -144,41 +144,41 @@ function buildProxyGroups(config, c) {
   var allNodes = c.ALL.slice()
 
   upsertGroup(config, {
-    name: '🎯 节点选择', type: 'select',
-    proxies: ['⚡ 自动选择', '🔄 故障转移'].concat(allNodes).concat(['DIRECT'])
+    name: '节点选择', type: 'select',
+    proxies: ['自动选择', '故障转移'].concat(allNodes).concat(['DIRECT'])
   })
 
   upsertGroup(config, {
-    name: '⚡ 自动选择', type: 'url-test',
+    name: '自动选择', type: 'url-test',
     url: 'http://www.gstatic.com/generate_204',
     interval: 300, tolerance: 150, lazy: true,
     proxies: allNodes.slice()
   })
 
   upsertGroup(config, {
-    name: '🔄 故障转移', type: 'fallback',
+    name: '故障转移', type: 'fallback',
     url: 'http://www.gstatic.com/generate_204',
     interval: 300, lazy: true,
     proxies: allNodes.slice()
   })
 
   // 业务策略组 — 节点选择排最前，后面跟全部节点
-  var bizGroup = ['🎯 节点选择', '⚡ 自动选择', '🔄 故障转移'].concat(allNodes).concat(['DIRECT'])
+  var bizGroup = ['节点选择', '自动选择', '故障转移'].concat(allNodes).concat(['DIRECT'])
 
-  upsertGroup(config, { name: '🤖 AI 服务',   type: 'select', proxies: bizGroup.slice() })
-  upsertGroup(config, { name: '📹 YouTube',   type: 'select', proxies: bizGroup.slice() })
-  upsertGroup(config, { name: '✈️ Telegram',  type: 'select', proxies: bizGroup.slice() })
-  upsertGroup(config, { name: '🎬 流媒体',    type: 'select', proxies: bizGroup.slice() })
+  upsertGroup(config, { name: 'AI 服务',   type: 'select', proxies: bizGroup.slice() })
+  upsertGroup(config, { name: 'YouTube',   type: 'select', proxies: bizGroup.slice() })
+  upsertGroup(config, { name: 'Telegram',  type: 'select', proxies: bizGroup.slice() })
+  upsertGroup(config, { name: '流媒体',    type: 'select', proxies: bizGroup.slice() })
 
-  var appleGroup = ['DIRECT', '🎯 节点选择', '⚡ 自动选择', '🔄 故障转移'].concat(allNodes)
-  upsertGroup(config, { name: '🍎 苹果服务', type: 'select', proxies: appleGroup.slice() })
-  upsertGroup(config, { name: 'Ⓜ️ 微软服务', type: 'select', proxies: appleGroup.slice() })
+  var appleGroup = ['DIRECT', '节点选择', '自动选择', '故障转移'].concat(allNodes)
+  upsertGroup(config, { name: '苹果服务', type: 'select', proxies: appleGroup.slice() })
+  upsertGroup(config, { name: '微软服务', type: 'select', proxies: appleGroup.slice() })
 
-  upsertGroup(config, { name: '🏠 国内直连', type: 'select', proxies: ['DIRECT'] })
-  upsertGroup(config, { name: '🛑 广告拦截', type: 'select', proxies: ['REJECT', 'DIRECT'] })
+  upsertGroup(config, { name: '国内直连', type: 'select', proxies: ['DIRECT'] })
+  upsertGroup(config, { name: '广告拦截', type: 'select', proxies: ['REJECT', 'DIRECT'] })
 
-  var finalGroup = ['🎯 节点选择', '⚡ 自动选择', '🔄 故障转移'].concat(allNodes).concat(['DIRECT', 'REJECT'])
-  upsertGroup(config, { name: '🐟 漏网之鱼', type: 'select', proxies: finalGroup.slice() })
+  var finalGroup = ['节点选择', '自动选择', '故障转移'].concat(allNodes).concat(['DIRECT', 'REJECT'])
+  upsertGroup(config, { name: '漏网之鱼', type: 'select', proxies: finalGroup.slice() })
 }
 
 // ================================================================
@@ -213,11 +213,11 @@ function injectRuleProviders(config) {
 
   RP['openai'] = { type: 'http', behavior: 'domain', format: 'mrs',
     url: 'https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/openai.mrs',
-    path: './ruleset/meta-openai.mrs', interval: 85530, proxy: '🤖 AI 服务' }
+    path: './ruleset/meta-openai.mrs', interval: 85530, proxy: 'AI 服务' }
 
   RP['tiktok'] = { type: 'http', behavior: 'domain', format: 'mrs',
     url: 'https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/tiktok.mrs',
-    path: './ruleset/meta-tiktok.mrs', interval: 85575, proxy: '🎬 流媒体' }
+    path: './ruleset/meta-tiktok.mrs', interval: 85575, proxy: '流媒体' }
 
   RP['github'] = { type: 'http', behavior: 'domain', format: 'mrs',
     url: 'https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/github.mrs',
@@ -225,11 +225,11 @@ function injectRuleProviders(config) {
 
   RP['microsoft'] = { type: 'http', behavior: 'domain', format: 'mrs',
     url: 'https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/microsoft.mrs',
-    path: './ruleset/meta-microsoft.mrs', interval: 85650, proxy: 'Ⓜ️ 微软服务' }
+    path: './ruleset/meta-microsoft.mrs', interval: 85650, proxy: '微软服务' }
 
   RP['apple'] = { type: 'http', behavior: 'domain', format: 'mrs',
     url: 'https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/apple.mrs',
-    path: './ruleset/meta-apple.mrs', interval: 85665, proxy: '🍎 苹果服务' }
+    path: './ruleset/meta-apple.mrs', interval: 85665, proxy: '苹果服务' }
 
   RP['proxy_sites'] = { type: 'http', behavior: 'domain', format: 'mrs',
     url: 'https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/geolocation-!cn.mrs',
@@ -254,12 +254,12 @@ function injectRules(config) {
   var R = config.rules
 
   // 广告拦截
-  R.push('GEOSITE,category-ads-all,🛑 广告拦截')
-  R.push('RULE-SET,anti-ad,🛑 广告拦截')
+  R.push('GEOSITE,category-ads-all,广告拦截')
+  R.push('RULE-SET,anti-ad,广告拦截')
 
   // QUIC 阻断
-  R.push('AND,((DST-PORT,443),(NETWORK,UDP),(RULE-SET,microsoft)),Ⓜ️ 微软服务')
-  R.push('AND,((DST-PORT,443),(NETWORK,UDP),(RULE-SET,apple)),🍎 苹果服务')
+  R.push('AND,((DST-PORT,443),(NETWORK,UDP),(RULE-SET,microsoft)),微软服务')
+  R.push('AND,((DST-PORT,443),(NETWORK,UDP),(RULE-SET,apple)),苹果服务')
   R.push('AND,((DST-PORT,443),(NETWORK,UDP),(NOT,((RULE-SET,cn_sites)))),REJECT')
 
   // 局域网 / 私有网络
@@ -282,19 +282,19 @@ function injectRules(config) {
   }
 
   // 前置拦截
-  R.push('DOMAIN-SUFFIX,jsdelivr.net,🎯 节点选择')
-  R.push('DOMAIN,dns.google,🎯 节点选择')
-  R.push('DOMAIN,dns.google.com,🎯 节点选择')
+  R.push('DOMAIN-SUFFIX,jsdelivr.net,节点选择')
+  R.push('DOMAIN,dns.google,节点选择')
+  R.push('DOMAIN,dns.google.com,节点选择')
 
   // YouTube
-  R.push('DOMAIN-SUFFIX,youtube.com,📹 YouTube')
-  R.push('DOMAIN-SUFFIX,youtu.be,📹 YouTube')
-  R.push('DOMAIN-SUFFIX,googlevideo.com,📹 YouTube')
-  R.push('DOMAIN-SUFFIX,ytimg.com,📹 YouTube')
-  R.push('DOMAIN-SUFFIX,ggpht.com,📹 YouTube')
+  R.push('DOMAIN-SUFFIX,youtube.com,YouTube')
+  R.push('DOMAIN-SUFFIX,youtu.be,YouTube')
+  R.push('DOMAIN-SUFFIX,googlevideo.com,YouTube')
+  R.push('DOMAIN-SUFFIX,ytimg.com,YouTube')
+  R.push('DOMAIN-SUFFIX,ggpht.com,YouTube')
 
   // AI 服务
-  R.push('RULE-SET,openai,🤖 AI 服务')
+  R.push('RULE-SET,openai,AI 服务')
   var aiDomains = [
     'chatgpt.com', 'oaistatic.com', 'oaiusercontent.com', 'sora.com',
     'claude.ai', 'anthropic.com',
@@ -306,20 +306,20 @@ function injectRules(config) {
     'x.ai', 'grok.com', 'copilot.microsoft.com'
   ]
   for (var j = 0; j < aiDomains.length; j++) {
-    R.push('DOMAIN-SUFFIX,' + aiDomains[j] + ',🤖 AI 服务')
+    R.push('DOMAIN-SUFFIX,' + aiDomains[j] + ',AI 服务')
   }
 
   // Google 服务（放在 AI 之后，避免遮蔽特定 API 子域名）
-  R.push('DOMAIN-SUFFIX,gstatic.com,🎯 节点选择')
-  R.push('DOMAIN-SUFFIX,googleapis.com,🎯 节点选择')
+  R.push('DOMAIN-SUFFIX,gstatic.com,节点选择')
+  R.push('DOMAIN-SUFFIX,googleapis.com,节点选择')
 
   // DeepSeek 国内直连
-  R.push('DOMAIN-SUFFIX,deepseek.com,🏠 国内直连')
+  R.push('DOMAIN-SUFFIX,deepseek.com,国内直连')
 
   // Telegram
-  R.push('DOMAIN-SUFFIX,telegram.org,✈️ Telegram')
-  R.push('DOMAIN-SUFFIX,telegram.me,✈️ Telegram')
-  R.push('DOMAIN-SUFFIX,t.me,✈️ Telegram')
+  R.push('DOMAIN-SUFFIX,telegram.org,Telegram')
+  R.push('DOMAIN-SUFFIX,telegram.me,Telegram')
+  R.push('DOMAIN-SUFFIX,t.me,Telegram')
 
   // 海外社交
   var socialDomains = [
@@ -333,14 +333,14 @@ function injectRules(config) {
     'pixiv.net', 'pximg.net'
   ]
   for (var k = 0; k < socialDomains.length; k++) {
-    R.push('DOMAIN-SUFFIX,' + socialDomains[k] + ',🎯 节点选择')
+    R.push('DOMAIN-SUFFIX,' + socialDomains[k] + ',节点选择')
   }
 
   // 流媒体
-  R.push('RULE-SET,tiktok,🎬 流媒体')
+  R.push('RULE-SET,tiktok,流媒体')
 
   // 字节跳动海外（非 TikTok 的海外业务/基础设施，必须在 cn_sites 之前）
-  R.push('GEOSITE,bytedance@!cn,🎯 节点选择')
+  R.push('GEOSITE,bytedance@!cn,节点选择')
 
   var streamDomains = [
     'netflix.com', 'nflxvideo.net', 'nflxext.com',
@@ -352,7 +352,7 @@ function injectRules(config) {
     'vimeo.com', 'dailymotion.com', 'crunchyroll.com'
   ]
   for (var s = 0; s < streamDomains.length; s++) {
-    R.push('DOMAIN-SUFFIX,' + streamDomains[s] + ',🎬 流媒体')
+    R.push('DOMAIN-SUFFIX,' + streamDomains[s] + ',流媒体')
   }
 
   // 游戏平台
@@ -367,11 +367,11 @@ function injectRules(config) {
     'gog.com', 'rockstargames.com'
   ]
   for (var g = 0; g < gameDomains.length; g++) {
-    R.push('DOMAIN-SUFFIX,' + gameDomains[g] + ',🎯 节点选择')
+    R.push('DOMAIN-SUFFIX,' + gameDomains[g] + ',节点选择')
   }
 
   // 开发工具
-  R.push('RULE-SET,github,🎯 节点选择')
+  R.push('RULE-SET,github,节点选择')
   var devDomains = [
     'ghcr.io', 'github.io',
     'docker.io', 'docker.com',
@@ -389,26 +389,26 @@ function injectRules(config) {
     'atlassian.com', 'hashicorp.com', 'terraform.io'
   ]
   for (var d = 0; d < devDomains.length; d++) {
-    R.push('DOMAIN-SUFFIX,' + devDomains[d] + ',🎯 节点选择')
+    R.push('DOMAIN-SUFFIX,' + devDomains[d] + ',节点选择')
   }
-  R.push('GEOSITE,category-dev,🎯 节点选择')
+  R.push('GEOSITE,category-dev,节点选择')
 
   // 苹果服务
   R.push('DOMAIN-SUFFIX,icloud.com,DIRECT')
-  R.push('RULE-SET,apple,🍎 苹果服务')
-  R.push('DOMAIN-SUFFIX,apple.com.cn,🍎 苹果服务')
-  R.push('DOMAIN-SUFFIX,icloud.com.cn,🍎 苹果服务')
-  R.push('DOMAIN-SUFFIX,mzstatic.com,🍎 苹果服务')
+  R.push('RULE-SET,apple,苹果服务')
+  R.push('DOMAIN-SUFFIX,apple.com.cn,苹果服务')
+  R.push('DOMAIN-SUFFIX,icloud.com.cn,苹果服务')
+  R.push('DOMAIN-SUFFIX,mzstatic.com,苹果服务')
 
   // 微软服务
   R.push('DOMAIN-SUFFIX,storeedge.microsoft.com,DIRECT')
   R.push('DOMAIN-SUFFIX,mp.microsoft.com,DIRECT')
-  R.push('RULE-SET,microsoft,Ⓜ️ 微软服务')
-  R.push('DOMAIN-SUFFIX,microsoft.cn,Ⓜ️ 微软服务')
-  R.push('DOMAIN-SUFFIX,msftconnecttest.com,Ⓜ️ 微软服务')
-  R.push('DOMAIN-SUFFIX,msn.com,Ⓜ️ 微软服务')
-  R.push('DOMAIN-SUFFIX,live.com,Ⓜ️ 微软服务')
-  R.push('DOMAIN-SUFFIX,sfx.ms,Ⓜ️ 微软服务')
+  R.push('RULE-SET,microsoft,微软服务')
+  R.push('DOMAIN-SUFFIX,microsoft.cn,微软服务')
+  R.push('DOMAIN-SUFFIX,msftconnecttest.com,微软服务')
+  R.push('DOMAIN-SUFFIX,msn.com,微软服务')
+  R.push('DOMAIN-SUFFIX,live.com,微软服务')
+  R.push('DOMAIN-SUFFIX,sfx.ms,微软服务')
 
   // 国内直连
   var cnDomains = [
@@ -429,17 +429,17 @@ function injectRules(config) {
   }
 
   // Google .cn 防误伤
-  R.push('DOMAIN-SUFFIX,services.googleapis.cn,🎯 节点选择')
-  R.push('DOMAIN-SUFFIX,googleapis.cn,🎯 节点选择')
+  R.push('DOMAIN-SUFFIX,services.googleapis.cn,节点选择')
+  R.push('DOMAIN-SUFFIX,googleapis.cn,节点选择')
 
   // 基础分流
-  R.push('RULE-SET,gfw,🎯 节点选择')
-  R.push('RULE-SET,cn_sites,🏠 国内直连')
-  R.push('RULE-SET,proxy_sites,🎯 节点选择')
-  R.push('GEOIP,CN,🏠 国内直连,no-resolve')
+  R.push('RULE-SET,gfw,节点选择')
+  R.push('RULE-SET,cn_sites,国内直连')
+  R.push('RULE-SET,proxy_sites,节点选择')
+  R.push('GEOIP,CN,国内直连,no-resolve')
 
   // 最终匹配
-  R.push('MATCH,🐟 漏网之鱼')
+  R.push('MATCH,漏网之鱼')
 
   log('[' + VERSION + '] Injected ' + R.length + ' rules')
 }
