@@ -260,9 +260,11 @@ function injectRules(config) {
   R.push('GEOSITE,category-ads-all,广告拦截')
   R.push('RULE-SET,anti-ad,广告拦截')
 
-  // QUIC 阻断
+  // QUIC 阻断（微软/苹果/YouTube/Google 豁免，其余非中国站点 REJECT）
   R.push('AND,((DST-PORT,443),(NETWORK,UDP),(RULE-SET,microsoft)),微软服务')
   R.push('AND,((DST-PORT,443),(NETWORK,UDP),(RULE-SET,apple)),苹果服务')
+  R.push('AND,((DST-PORT,443),(NETWORK,UDP),(GEOSITE,youtube)),YouTube')
+  R.push('AND,((DST-PORT,443),(NETWORK,UDP),(GEOSITE,google)),节点选择')
   R.push('AND,((DST-PORT,443),(NETWORK,UDP),(NOT,((RULE-SET,cn_sites)))),REJECT')
 
   // 局域网 / 私有网络
