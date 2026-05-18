@@ -56,7 +56,6 @@ function overwriteGeneral(config) {
     ],
     'skip-domain': [
       '+.mijia.cloud',
-      '+.xiaomi.com',
       '+.oray.com',
       '+.oray.net',
       '+.apple.com'

@@ -62,7 +62,6 @@ sniffer:
     - +.workers.dev
   skip-domain:
     - +.mijia.cloud
-    - +.xiaomi.com
     - +.oray.com
     - +.oray.net
     - +.apple.com
