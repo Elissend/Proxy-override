@@ -61,7 +61,8 @@ sniffer:
     - +.vercel.app
     - +.workers.dev
   skip-domain:
-    - Mijia Cloud
+    - +.mijia.cloud
+    - +.xiaomi.com
     - +.oray.com
     - +.oray.net
     - +.apple.com
@@ -98,16 +99,10 @@ dns:
     - +.nvidia.com
     - +.ntp.org
     - +.pool.ntp.org
-    - time.*.com
-    - ntp.*.com
-    - time.*.gov
-    - time.*.apple.com
+    - +.time.apple.com
+    - +.time.google.com
+    - +.time.nist.gov
     - time.windows.com
-    - time.nist.gov
-    - +.stun.*
-    - +.stun.*.*
-    - +.stun.*.*.*
-    - stun.*
     - ip.cip.cc
     - captive.apple.com
     - connectivitycheck.gstatic.com

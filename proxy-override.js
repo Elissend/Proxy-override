@@ -55,7 +55,8 @@ function overwriteGeneral(config) {
       '+.workers.dev'
     ],
     'skip-domain': [
-      'Mijia Cloud',
+      '+.mijia.cloud',
+      '+.xiaomi.com',
       '+.oray.com',
       '+.oray.net',
       '+.apple.com'
@@ -76,8 +77,7 @@ function overwriteGeneral(config) {
       '+.oray.com', '+.sunlogin.com', '+.todesk.com', '+.rustdesk.com',
       '+.teamviewer.com', '+.anydesk.com', '+.tailscale.com', '+.zerotier.com', '+.nvidia.com',
       '+.ntp.org', '+.pool.ntp.org',
-      'time.*.com', 'ntp.*.com', 'time.*.gov', 'time.*.apple.com', 'time.windows.com', 'time.nist.gov',
-      '+.stun.*', '+.stun.*.*', '+.stun.*.*.*', 'stun.*',
+      '+.time.apple.com', '+.time.google.com', '+.time.nist.gov', 'time.windows.com',
       'ip.cip.cc',
       'captive.apple.com', 'connectivitycheck.gstatic.com', 'id6.me',
       'localhost.ptlogin2.qq.com',
