@@ -200,6 +200,7 @@ proxy-groups:
 
   - name: 节点选择
     type: select
+    icon: https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Manual.png
     use:
       - sub
     proxies:
@@ -209,6 +210,7 @@ proxy-groups:
 
   - name: 自动选择
     type: url-test
+    icon: https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Auto.png
     url: http://www.gstatic.com/generate_204
     interval: 300
     tolerance: 150
@@ -220,6 +222,7 @@ proxy-groups:
 
   - name: 故障转移
     type: fallback
+    icon: https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Round_Robin.png
     url: http://www.gstatic.com/generate_204
     interval: 300
     lazy: true
@@ -230,6 +233,7 @@ proxy-groups:
 
   - name: AI 服务
     type: select
+    icon: https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Bot.png
     use:
       - sub
     proxies:
@@ -240,6 +244,7 @@ proxy-groups:
 
   - name: YouTube
     type: select
+    icon: https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/YouTube.png
     use:
       - sub
     proxies:
@@ -250,6 +255,7 @@ proxy-groups:
 
   - name: Telegram
     type: select
+    icon: https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Telegram.png
     use:
       - sub
     proxies:
@@ -260,6 +266,7 @@ proxy-groups:
 
   - name: 流媒体
     type: select
+    icon: https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/ForeignMedia.png
     use:
       - sub
     proxies:
@@ -270,6 +277,7 @@ proxy-groups:
 
   - name: 苹果服务
     type: select
+    icon: https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Apple.png
     use:
       - sub
     proxies:
@@ -280,6 +288,7 @@ proxy-groups:
 
   - name: 微软服务
     type: select
+    icon: https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Microsoft.png
     use:
       - sub
     proxies:
@@ -290,17 +299,20 @@ proxy-groups:
 
   - name: 国内直连
     type: select
+    icon: https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Direct.png
     proxies:
       - DIRECT
 
   - name: 广告拦截
     type: select
+    icon: https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/AdBlack.png
     proxies:
       - REJECT
       - DIRECT
 
   - name: 漏网之鱼
     type: select
+    icon: https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Available.png
     use:
       - sub
     proxies:
