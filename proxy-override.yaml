@@ -311,6 +311,7 @@ rule-providers:
     url: https://fastly.jsdelivr.net/gh/DustinWin/ruleset_geodata@mihomo-ruleset/ads.mrs
     path: ./ruleset/anti-ad.mrs
     interval: 85515
+    proxy: DIRECT
 
   openai:
     type: http
@@ -337,6 +338,7 @@ rule-providers:
     url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/github.mrs
     path: ./ruleset/meta-github.mrs
     interval: 85635
+    proxy: DIRECT
 
   microsoft:
     type: http
@@ -363,6 +365,7 @@ rule-providers:
     url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/geolocation-!cn.mrs
     path: ./ruleset/proxy_sites.mrs
     interval: 86415
+    proxy: DIRECT
 
   cn_sites:
     type: http
@@ -371,6 +374,7 @@ rule-providers:
     url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/cn.mrs
     path: ./ruleset/cn_sites.mrs
     interval: 86430
+    proxy: DIRECT
 
   gfw:
     type: http
@@ -379,6 +383,7 @@ rule-providers:
     url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/gfw.mrs
     path: ./ruleset/meta-gfw.mrs
     interval: 86445
+    proxy: DIRECT
 
 # ================================================================
 #  分流规则（216 条）
