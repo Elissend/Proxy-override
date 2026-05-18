@@ -515,12 +515,19 @@ rules:
   - DOMAIN-SUFFIX,pixiv.net,节点选择
   - DOMAIN-SUFFIX,pximg.net,节点选择
 
+  # --- 字节海外专属 ---
+  - DOMAIN-SUFFIX,byteoversea.com,节点选择
+  - DOMAIN-SUFFIX,byteoversea.net,节点选择
+  - DOMAIN-SUFFIX,ibytedtos.com,节点选择
+  - DOMAIN-SUFFIX,ibyteimg.com,节点选择
+  - DOMAIN-SUFFIX,byteglb.com,节点选择
+  - DOMAIN-SUFFIX,larksuite.com,节点选择
+  - DOMAIN-SUFFIX,lark.com,节点选择
+  - DOMAIN-SUFFIX,pangle.io,节点选择
+  - DOMAIN-SUFFIX,volces.com,节点选择
+
   # --- 流媒体 ---
   - RULE-SET,tiktok,流媒体
-
-  # --- 字节跳动海外（非 TikTok 的海外业务/基础设施，必须在 cn_sites 之前）---
-  - GEOSITE,bytedance@!cn,节点选择
-
   - DOMAIN-SUFFIX,netflix.com,流媒体
   - DOMAIN-SUFFIX,nflxvideo.net,流媒体
   - DOMAIN-SUFFIX,nflxext.com,流媒体

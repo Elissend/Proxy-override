@@ -336,11 +336,17 @@ function injectRules(config) {
     R.push('DOMAIN-SUFFIX,' + socialDomains[k] + ',节点选择')
   }
 
+  // 字节海外专属
+  var bytedanceOverseas = [
+    'byteoversea.com', 'byteoversea.net', 'ibytedtos.com', 'ibyteimg.com',
+    'byteglb.com', 'larksuite.com', 'lark.com', 'pangle.io', 'volces.com'
+  ]
+  for (var bo = 0; bo < bytedanceOverseas.length; bo++) {
+    R.push('DOMAIN-SUFFIX,' + bytedanceOverseas[bo] + ',节点选择')
+  }
+
   // 流媒体
   R.push('RULE-SET,tiktok,流媒体')
-
-  // 字节跳动海外（非 TikTok 的海外业务/基础设施，必须在 cn_sites 之前）
-  R.push('GEOSITE,bytedance@!cn,节点选择')
 
   var streamDomains = [
     'netflix.com', 'nflxvideo.net', 'nflxext.com',
