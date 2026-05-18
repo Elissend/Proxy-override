@@ -341,8 +341,8 @@ function injectRules(config) {
     'byteoversea.com', 'byteoversea.net', 'ibytedtos.com', 'ibyteimg.com',
     'byteglb.com', 'larksuite.com', 'lark.com', 'pangle.io', 'volces.com'
   ]
-  for (var bo = 0; bo < bytedanceOverseas.length; bo++) {
-    R.push('DOMAIN-SUFFIX,' + bytedanceOverseas[bo] + ',节点选择')
+  for (var i = 0; i < bytedanceOverseas.length; i++) {
+    R.push('DOMAIN-SUFFIX,' + bytedanceOverseas[i] + ',节点选择')
   }
 
   // 流媒体
