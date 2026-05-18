@@ -1,5 +1,5 @@
 # FlClash / Mihomo 通用覆写配置
-# 版本：v2.1 (2026-05-18)
+# 版本：v2.2 (2026-05-18)
 # 架构：3 基础设施组 + 9 业务策略组 + 9 rule-providers + 全加密 DNS
 # 适用：Mihomo / Clash.Meta 内核；任何机场订阅
 # 对应 JS 覆写脚本：proxy-override.js
@@ -319,6 +319,10 @@ proxy-groups:
 # ================================================================
 #  远程规则集（9 个 MRS）
 # ================================================================
+#  所有 URL 使用 fastly.jsdelivr.net CDN 分发
+#  中国大陆用户遇到下载失败可替换以下任一镜像:
+#    fastly.jsdelivr.net    → testingcf.jsdelivr.net (Cloudflare CDN)
+#    fastly.jsdelivr.net    → gcore.jsdelivr.net     (Gcore CDN)
 
 rule-providers:
   anti-ad:
@@ -403,7 +407,7 @@ rule-providers:
     proxy: DIRECT
 
 # ================================================================
-#  分流规则（216 条）
+#  分流规则
 # ================================================================
 
 rules:
@@ -450,11 +454,7 @@ rules:
   - DOMAIN,dns.google.com,节点选择
 
   # --- YouTube ---
-  - DOMAIN-SUFFIX,youtube.com,YouTube
-  - DOMAIN-SUFFIX,youtu.be,YouTube
-  - DOMAIN-SUFFIX,googlevideo.com,YouTube
-  - DOMAIN-SUFFIX,ytimg.com,YouTube
-  - DOMAIN-SUFFIX,ggpht.com,YouTube
+  - GEOSITE,youtube,YouTube
 
   # --- AI 服务 ---
   - RULE-SET,openai,AI 服务
@@ -493,35 +493,24 @@ rules:
   - DOMAIN-SUFFIX,deepseek.com,国内直连
 
   # --- Telegram ---
-  - DOMAIN-SUFFIX,telegram.org,Telegram
-  - DOMAIN-SUFFIX,telegram.me,Telegram
-  - DOMAIN-SUFFIX,t.me,Telegram
+  - GEOSITE,telegram,Telegram
 
   # --- 海外社交 ---
-  - DOMAIN-SUFFIX,twitter.com,节点选择
-  - DOMAIN-SUFFIX,twimg.com,节点选择
-  - DOMAIN-SUFFIX,t.co,节点选择
-  - DOMAIN-SUFFIX,x.com,节点选择
-  - DOMAIN-SUFFIX,reddit.com,节点选择
-  - DOMAIN-SUFFIX,redd.it,节点选择
-  - DOMAIN-SUFFIX,facebook.com,节点选择
-  - DOMAIN-SUFFIX,fbcdn.net,节点选择
-  - DOMAIN-SUFFIX,instagram.com,节点选择
-  - DOMAIN-SUFFIX,cdninstagram.com,节点选择
-  - DOMAIN-SUFFIX,linkedin.com,节点选择
-  - DOMAIN-SUFFIX,licdn.com,节点选择
+  - GEOSITE,twitter,节点选择
+  - GEOSITE,reddit,节点选择
+  - GEOSITE,facebook,节点选择
+  - GEOSITE,instagram,节点选择
+  - GEOSITE,linkedin,节点选择
   - DOMAIN-SUFFIX,snapchat.com,节点选择
-  - DOMAIN-SUFFIX,pinterest.com,节点选择
-  - DOMAIN-SUFFIX,threads.net,节点选择
-  - DOMAIN-SUFFIX,bsky.app,节点选择
-  - DOMAIN-SUFFIX,bsky.social,节点选择
-  - DOMAIN-SUFFIX,quora.com,节点选择
-  - DOMAIN-SUFFIX,medium.com,节点选择
-  - DOMAIN-SUFFIX,imgur.com,节点选择
-  - DOMAIN-SUFFIX,flickr.com,节点选择
-  - DOMAIN-SUFFIX,tumblr.com,节点选择
-  - DOMAIN-SUFFIX,pixiv.net,节点选择
-  - DOMAIN-SUFFIX,pximg.net,节点选择
+  - GEOSITE,pinterest,节点选择
+  - GEOSITE,threads,节点选择
+  - GEOSITE,bluesky,节点选择
+  - GEOSITE,quora,节点选择
+  - GEOSITE,medium,节点选择
+  - GEOSITE,imgur,节点选择
+  - GEOSITE,flickr,节点选择
+  - GEOSITE,tumblr,节点选择
+  - GEOSITE,pixiv,节点选择
 
   # --- 字节海外专属 ---
   - DOMAIN-SUFFIX,byteoversea.com,节点选择
@@ -536,48 +525,22 @@ rules:
 
   # --- 流媒体 ---
   - RULE-SET,tiktok,流媒体
-  - DOMAIN-SUFFIX,netflix.com,流媒体
-  - DOMAIN-SUFFIX,nflxvideo.net,流媒体
-  - DOMAIN-SUFFIX,nflxext.com,流媒体
-  - DOMAIN-SUFFIX,spotify.com,流媒体
-  - DOMAIN-SUFFIX,scdn.co,流媒体
-  - DOMAIN-SUFFIX,spotifycdn.com,流媒体
-  - DOMAIN-SUFFIX,hulu.com,流媒体
-  - DOMAIN-SUFFIX,hbomax.com,流媒体
-  - DOMAIN-SUFFIX,max.com,流媒体
-  - DOMAIN-SUFFIX,disneyplus.com,流媒体
-  - DOMAIN-SUFFIX,bamgrid.com,流媒体
-  - DOMAIN-SUFFIX,primevideo.com,流媒体
-  - DOMAIN-SUFFIX,amazonprime.com,流媒体
-  - DOMAIN-SUFFIX,twitch.tv,流媒体
+  - GEOSITE,netflix,流媒体
+  - GEOSITE,spotify,流媒体
+  - GEOSITE,hulu,流媒体
+  - GEOSITE,hbo,流媒体
+  - GEOSITE,disney,流媒体
+  - GEOSITE,primevideo,流媒体
+  - GEOSITE,twitch,流媒体
+  - GEOSITE,vimeo,流媒体
+  - GEOSITE,dailymotion,流媒体
   - DOMAIN-SUFFIX,discoveryplus.com,流媒体
   - DOMAIN-SUFFIX,paramountplus.com,流媒体
   - DOMAIN-SUFFIX,peacocktv.com,流媒体
-  - DOMAIN-SUFFIX,vimeo.com,流媒体
-  - DOMAIN-SUFFIX,dailymotion.com,流媒体
   - DOMAIN-SUFFIX,crunchyroll.com,流媒体
 
-  # --- 游戏平台 ---
-  - DOMAIN-SUFFIX,steampowered.com,节点选择
-  - DOMAIN-SUFFIX,steamcommunity.com,节点选择
-  - DOMAIN-SUFFIX,steamcdn-a.akamaihd.net,节点选择
-  - DOMAIN-SUFFIX,epicgames.com,节点选择
-  - DOMAIN-SUFFIX,ea.com,节点选择
-  - DOMAIN-SUFFIX,origin.com,节点选择
-  - DOMAIN-SUFFIX,ubisoft.com,节点选择
-  - DOMAIN-SUFFIX,ubi.com,节点选择
-  - DOMAIN-SUFFIX,riotgames.com,节点选择
-  - DOMAIN-SUFFIX,leagueoflegends.com,节点选择
-  - DOMAIN-SUFFIX,blizzard.com,节点选择
-  - DOMAIN-SUFFIX,battle.net,节点选择
-  - DOMAIN-SUFFIX,nintendo.com,节点选择
-  - DOMAIN-SUFFIX,playstation.com,节点选择
-  - DOMAIN-SUFFIX,xbox.com,节点选择
-  - DOMAIN-SUFFIX,xboxlive.com,节点选择
-  - DOMAIN-SUFFIX,hoyoverse.com,节点选择
-  - DOMAIN-SUFFIX,hoyolab.com,节点选择
-  - DOMAIN-SUFFIX,gog.com,节点选择
-  - DOMAIN-SUFFIX,rockstargames.com,节点选择
+  # --- 游戏平台 (geosite:category-games 含 Steam/Epic/EA/Ubisoft/Riot/Blizzard/Nintendo/PlayStation/Xbox/GOG/Rockstar/HoYoverse 等 37+ 平台) ---
+  - GEOSITE,category-games,节点选择
 
   # --- 开发工具 ---
   - RULE-SET,github,节点选择

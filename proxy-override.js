@@ -1,5 +1,5 @@
 // FlClash 覆写脚本
-// 版本：v2.1 (2026-05-18)
+// 版本：v2.2 (2026-05-18)
 // 架构：3 基础设施组 + 9 业务策略组 + 9 rule-providers + 全加密 DNS
 // 适用：FlClash >= v0.8.85；任何机场订阅
 //
@@ -13,10 +13,16 @@
 //
 // ================================================================
 
-const VERSION = 'v2.1'
+const VERSION = 'v2.2'
 
 // FlClash JS 引擎环境兼容
 var log = (typeof console !== 'undefined' && console.log) ? console.log.bind(console) : function() {}
+
+// CDN 基地址——所有远程规则集 / GeoX 数据共用
+// 中国大陆用户遇到下载失败可尝试替换为以下任一镜像：
+//   testingcf.jsdelivr.net — Cloudflare CDN
+//   gcore.jsdelivr.net     — Gcore CDN
+const CDN_BASE = 'https://fastly.jsdelivr.net'
 
 // ================================================================
 //  模块 A：全局参数 / DNS / Sniffer 覆写
@@ -34,8 +40,8 @@ function overwriteGeneral(config) {
   config.profile['store-fake-ip'] = false
 
   config['geox-url'] = {
-    geosite: 'https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geosite.dat',
-    geoip: 'https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip.dat'
+    geosite: CDN_BASE + '/gh/MetaCubeX/meta-rules-dat@release/geosite.dat',
+    geoip: CDN_BASE + '/gh/MetaCubeX/meta-rules-dat@release/geoip.dat'
   }
 
   // --- Sniffer ---
@@ -211,39 +217,39 @@ function injectRuleProviders(config) {
   var RP = config['rule-providers']
 
   RP['anti-ad'] = { type: 'http', behavior: 'domain', format: 'mrs',
-    url: 'https://fastly.jsdelivr.net/gh/DustinWin/ruleset_geodata@mihomo-ruleset/ads.mrs',
+    url: CDN_BASE + '/gh/DustinWin/ruleset_geodata@mihomo-ruleset/ads.mrs',
     path: './ruleset/anti-ad.mrs', interval: 85515, proxy: 'DIRECT' }
 
   RP['openai'] = { type: 'http', behavior: 'domain', format: 'mrs',
-    url: 'https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/openai.mrs',
+    url: CDN_BASE + '/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/openai.mrs',
     path: './ruleset/meta-openai.mrs', interval: 85530, proxy: 'AI 服务' }
 
   RP['tiktok'] = { type: 'http', behavior: 'domain', format: 'mrs',
-    url: 'https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/tiktok.mrs',
+    url: CDN_BASE + '/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/tiktok.mrs',
     path: './ruleset/meta-tiktok.mrs', interval: 85575, proxy: '流媒体' }
 
   RP['github'] = { type: 'http', behavior: 'domain', format: 'mrs',
-    url: 'https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/github.mrs',
+    url: CDN_BASE + '/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/github.mrs',
     path: './ruleset/meta-github.mrs', interval: 85635, proxy: 'DIRECT' }
 
   RP['microsoft'] = { type: 'http', behavior: 'domain', format: 'mrs',
-    url: 'https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/microsoft.mrs',
+    url: CDN_BASE + '/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/microsoft.mrs',
     path: './ruleset/meta-microsoft.mrs', interval: 85650, proxy: '微软服务' }
 
   RP['apple'] = { type: 'http', behavior: 'domain', format: 'mrs',
-    url: 'https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/apple.mrs',
+    url: CDN_BASE + '/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/apple.mrs',
     path: './ruleset/meta-apple.mrs', interval: 85665, proxy: '苹果服务' }
 
   RP['proxy_sites'] = { type: 'http', behavior: 'domain', format: 'mrs',
-    url: 'https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/geolocation-!cn.mrs',
+    url: CDN_BASE + '/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/geolocation-!cn.mrs',
     path: './ruleset/proxy_sites.mrs', interval: 86415, proxy: 'DIRECT' }
 
   RP['cn_sites'] = { type: 'http', behavior: 'domain', format: 'mrs',
-    url: 'https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/cn.mrs',
+    url: CDN_BASE + '/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/cn.mrs',
     path: './ruleset/cn_sites.mrs', interval: 86430, proxy: 'DIRECT' }
 
   RP['gfw'] = { type: 'http', behavior: 'domain', format: 'mrs',
-    url: 'https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/gfw.mrs',
+    url: CDN_BASE + '/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/gfw.mrs',
     path: './ruleset/meta-gfw.mrs', interval: 86445, proxy: 'DIRECT' }
 
   log('[' + VERSION + '] Injected ' + Object.keys(RP).length + ' rule-providers')
@@ -292,11 +298,7 @@ function injectRules(config) {
   R.push('DOMAIN,dns.google.com,节点选择')
 
   // YouTube
-  R.push('DOMAIN-SUFFIX,youtube.com,YouTube')
-  R.push('DOMAIN-SUFFIX,youtu.be,YouTube')
-  R.push('DOMAIN-SUFFIX,googlevideo.com,YouTube')
-  R.push('DOMAIN-SUFFIX,ytimg.com,YouTube')
-  R.push('DOMAIN-SUFFIX,ggpht.com,YouTube')
+  R.push('GEOSITE,youtube,YouTube')
 
   // AI 服务
   R.push('RULE-SET,openai,AI 服务')
@@ -322,24 +324,24 @@ function injectRules(config) {
   R.push('DOMAIN-SUFFIX,deepseek.com,国内直连')
 
   // Telegram
-  R.push('DOMAIN-SUFFIX,telegram.org,Telegram')
-  R.push('DOMAIN-SUFFIX,telegram.me,Telegram')
-  R.push('DOMAIN-SUFFIX,t.me,Telegram')
+  R.push('GEOSITE,telegram,Telegram')
 
   // 海外社交
-  var socialDomains = [
-    'twitter.com', 'twimg.com', 't.co', 'x.com',
-    'reddit.com', 'redd.it',
-    'facebook.com', 'fbcdn.net', 'instagram.com', 'cdninstagram.com',
-    'linkedin.com', 'licdn.com',
-    'snapchat.com', 'pinterest.com', 'threads.net',
-    'bsky.app', 'bsky.social',
-    'quora.com', 'medium.com', 'imgur.com', 'flickr.com', 'tumblr.com',
-    'pixiv.net', 'pximg.net'
-  ]
-  for (var k = 0; k < socialDomains.length; k++) {
-    R.push('DOMAIN-SUFFIX,' + socialDomains[k] + ',节点选择')
-  }
+  R.push('GEOSITE,twitter,节点选择')
+  R.push('GEOSITE,reddit,节点选择')
+  R.push('GEOSITE,facebook,节点选择')
+  R.push('GEOSITE,instagram,节点选择')
+  R.push('GEOSITE,linkedin,节点选择')
+  R.push('DOMAIN-SUFFIX,snapchat.com,节点选择')
+  R.push('GEOSITE,pinterest,节点选择')
+  R.push('GEOSITE,threads,节点选择')
+  R.push('GEOSITE,bluesky,节点选择')
+  R.push('GEOSITE,quora,节点选择')
+  R.push('GEOSITE,medium,节点选择')
+  R.push('GEOSITE,imgur,节点选择')
+  R.push('GEOSITE,flickr,节点选择')
+  R.push('GEOSITE,tumblr,节点选择')
+  R.push('GEOSITE,pixiv,节点选择')
 
   // 字节海外专属
   var bytedanceOverseas = [
@@ -352,34 +354,22 @@ function injectRules(config) {
 
   // 流媒体
   R.push('RULE-SET,tiktok,流媒体')
+  R.push('GEOSITE,netflix,流媒体')
+  R.push('GEOSITE,spotify,流媒体')
+  R.push('GEOSITE,hulu,流媒体')
+  R.push('GEOSITE,hbo,流媒体')
+  R.push('GEOSITE,disney,流媒体')
+  R.push('GEOSITE,primevideo,流媒体')
+  R.push('GEOSITE,twitch,流媒体')
+  R.push('GEOSITE,vimeo,流媒体')
+  R.push('GEOSITE,dailymotion,流媒体')
+  R.push('DOMAIN-SUFFIX,discoveryplus.com,流媒体')
+  R.push('DOMAIN-SUFFIX,paramountplus.com,流媒体')
+  R.push('DOMAIN-SUFFIX,peacocktv.com,流媒体')
+  R.push('DOMAIN-SUFFIX,crunchyroll.com,流媒体')
 
-  var streamDomains = [
-    'netflix.com', 'nflxvideo.net', 'nflxext.com',
-    'spotify.com', 'scdn.co', 'spotifycdn.com',
-    'hulu.com', 'hbomax.com', 'max.com',
-    'disneyplus.com', 'bamgrid.com',
-    'primevideo.com', 'amazonprime.com', 'twitch.tv',
-    'discoveryplus.com', 'paramountplus.com', 'peacocktv.com',
-    'vimeo.com', 'dailymotion.com', 'crunchyroll.com'
-  ]
-  for (var s = 0; s < streamDomains.length; s++) {
-    R.push('DOMAIN-SUFFIX,' + streamDomains[s] + ',流媒体')
-  }
-
-  // 游戏平台
-  var gameDomains = [
-    'steampowered.com', 'steamcommunity.com', 'steamcdn-a.akamaihd.net',
-    'epicgames.com', 'ea.com', 'origin.com',
-    'ubisoft.com', 'ubi.com',
-    'riotgames.com', 'leagueoflegends.com',
-    'blizzard.com', 'battle.net',
-    'nintendo.com', 'playstation.com', 'xbox.com', 'xboxlive.com',
-    'hoyoverse.com', 'hoyolab.com',
-    'gog.com', 'rockstargames.com'
-  ]
-  for (var g = 0; g < gameDomains.length; g++) {
-    R.push('DOMAIN-SUFFIX,' + gameDomains[g] + ',节点选择')
-  }
+  // 游戏平台 (geosite:category-games 含 Steam/Epic/EA/Ubisoft/Riot/Blizzard/Nintendo/PlayStation/Xbox/GOG/Rockstar/HoYoverse 等 37+ 平台)
+  R.push('GEOSITE,category-games,节点选择')
 
   // 开发工具
   R.push('RULE-SET,github,节点选择')

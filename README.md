@@ -1,8 +1,8 @@
 # FLClash Generic Proxy Override
 
-适用于 FLClash 的 Mihomo 内核覆写脚本。全加密 DNS、12 策略组、216 条分流规则，导入即用，零手动配置。
+适用于 FLClash 的 Mihomo 内核覆写脚本。全加密 DNS、12 策略组、~180 条分流规则，导入即用，零手动配置。
 
-[![Version](https://img.shields.io/badge/version-v2.1-blue)](https://github.com/Sgraqwq/Proxy-override/releases)
+[![Version](https://img.shields.io/badge/version-v2.2-blue)](https://github.com/Sgraqwq/Proxy-override/releases)
 
 > [!IMPORTANT]
 > **本脚本会不定期更新规则和修复问题，请定期检查并更新到最新版本，以免分流规则过期或 Bug 未修复。**
@@ -102,7 +102,7 @@ proxy-providers:
 ## 架构设计
 
 ```
-请求 → 规则引擎（216 条，顺序匹配）
+请求 → 规则引擎（~180 条，顺序匹配）
          │
          ├─ 广告          → REJECT
          ├─ QUIC UDP      → REJECT（微软/苹果除外）
@@ -203,30 +203,30 @@ aistudio.google.com → 单独走国外 DoH（防止国内 DNS 污染）
 
 所有规则集通过 `fastly.jsdelivr.net` CDN 分发，间隔错开避免同时更新。
 
-### 内置域名规则（216 条）
+### 内置域名规则（~180 条，大量引用 GEOSITE 分类保持自动更新）
 
 | 类别 | 数量 | 典型域名/规则 |
 |------|------|----------|
 | 广告拦截 | 2 | `category-ads-all` + `anti-ad` 规则集 |
-| QUIC 阻断 | 3 | 微软/苹果 QUIC 放行，其余非中国站点阻断 |
+| QUIC 阻断 | 5 | 微软/苹果/YouTube/Google 豁免 QUIC，其余非中国站点 REJECT |
 | 局域网 | 5 | `private` / `localhost` / `local` |
 | 进程直连 | 17 | 微信、QQ、远程桌面、Tailscale、frpc 等 |
 | 前置拦截 | 3 | `jsdelivr.net` / `dns.google` 确保走代理 |
-| YouTube | 5 | `youtube.com` / `googlevideo.com` / `ytimg.com` 等 |
+| YouTube | 1 | `GEOSITE,youtube`（含 youtube.com / googlevideo.com / ytimg.com 等） |
 | AI 服务 | 27 | OpenAI / Claude / Gemini / Perplexity / Cursor / HuggingFace 等 |
 | Google 基础 | 2 | `gstatic.com` / `googleapis.com` |
 | DeepSeek | 1 | 国内直连 |
-| Telegram | 3 | `telegram.org` / `t.me` |
-| 海外社交 | 24 | Twitter/X / Reddit / Facebook / Instagram / Pixiv 等 |
-| 流媒体 | 21 | Netflix / Disney+ / Spotify / TikTok 等 |
-| 游戏平台 | 20 | Steam / Epic / Blizzard / Nintendo / PlayStation 等 |
+| Telegram | 1 | `GEOSITE,telegram`（含 telegram.org / t.me / telegram.me 等） |
+| 海外社交 | 15 | 14 项 `GEOSITE` 引用（Twitter/Facebook/Instagram/Pixiv 等）+ snapchat |
+| 流媒体 | 14 | 9 项 `GEOSITE` 引用（Netflix/Spotify/Disney 等）+ 4 项硬编码 + tiktok 规则集 |
+| 游戏平台 | 1 | `GEOSITE,category-games`（含 Steam/Epic/Blizzard 等 37+ 平台） |
 | 开发工具 | 42 | GitHub / Docker / JetBrains / npm / PyPI / Vercel 等 |
 | 苹果 | 5 | Apple 规则集 + `icloud.com` 直连 |
 | 微软 | 8 | Microsoft 规则集 + 商店/更新 CDN 直连 |
 | 国内直连 | 15 | 百度 / 阿里 / 腾讯 / 字节等 |
 | 端口直连 | 6 | NTP `123` / STUN `3478-3479` 等 |
 | Google .cn | 2 | `services.googleapis.cn` / `googleapis.cn` |
-| 基础分流 | 4 | GFW / cn_sites / proxy_sites / GEOIP CN |
+| 基础分流 | 5 | GFW / cn_sites / GEOSITE:cn / proxy_sites / GEOIP CN |
 | MATCH | 1 | 漏网之鱼兜底 |
 
 ### 规则优先级
