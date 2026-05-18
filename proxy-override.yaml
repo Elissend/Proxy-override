@@ -1,4 +1,4 @@
-# FlClash / Mihomo 通用覆写配置（独立 YAML 版本）
+# FlClash / Mihomo 通用覆写配置
 # 版本：v2.0 (2026-05-18)
 # 架构：3 基础设施组 + 9 业务策略组 + 9 rule-providers + 全加密 DNS
 # 适用：Mihomo / Clash.Meta 内核；任何机场订阅
@@ -149,6 +149,12 @@ dns:
 #  如机场订阅本身就是 Clash 兼容格式，type 保持 http
 #  如机场提供 SS/SSR/Vmess 链接，需后端转换后使用
 #
+#  proxy: DIRECT 说明：
+#  订阅链接下载走直连，避免"首次启动节点还没下载 → 却需节
+#  点去拉订阅"的鸡生蛋死循环。大部分机场订阅域名直连可访问。
+#  如果你的机场订阅域名被墙，改为 proxy: 🎯 节点选择，但首
+#  次启动需要先通过其他方式获取节点（如手动导入一次缓存文件）。
+#
 #  节点名过滤说明：
 #  Mihomo 的 RE2 正则引擎不支持负向零宽断言 (?!...)，
 #  无法像 JS 覆写脚本那样在 YAML 中排除"剩余/到期/官网/免费"等
@@ -162,11 +168,16 @@ proxy-providers:
     type: http
     url: "https://你的机场订阅链接"
     path: ./proxy-providers/sub.yaml
-    interval: 3600
+    # 更新时间，单位为秒，建议设置为 12 小时以上，避免过于频繁地下载订阅
+    # 目前为 24 小时（86400 秒），根据需要调整
+    interval: 86400
+    proxy: DIRECT
     health-check:
       enable: true
       url: http://www.gstatic.com/generate_204
       interval: 300
+      lazy: true
+      timeout: 5000
 
 # ================================================================
 #  连接代理（手动添加的独立节点，可选）
