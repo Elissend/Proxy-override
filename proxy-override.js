@@ -1,5 +1,5 @@
 // FlClash 覆写脚本
-// 版本：v2.0 (2026-05-18)
+// 版本：v2.1 (2026-05-18)
 // 架构：3 基础设施组 + 9 业务策略组 + 9 rule-providers + 全加密 DNS
 // 适用：FlClash >= v0.8.85；任何机场订阅
 //
@@ -13,7 +13,7 @@
 //
 // ================================================================
 
-const VERSION = 'v2.0'
+const VERSION = 'v2.1'
 
 // FlClash JS 引擎环境兼容
 var log = (typeof console !== 'undefined' && console.log) ? console.log.bind(console) : function() {}

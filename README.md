@@ -2,7 +2,11 @@
 
 适用于 FLClash 的 Mihomo 内核覆写脚本。全加密 DNS、12 策略组、216 条分流规则，导入即用，零手动配置。
 
-[![Version](https://img.shields.io/badge/version-v2.0-blue)](https://github.com/Sgraqwq/Proxy-override/releases)
+[![Version](https://img.shields.io/badge/version-v2.1-blue)](https://github.com/Sgraqwq/Proxy-override/releases)
+
+> [!IMPORTANT]
+> **本脚本会不定期更新规则和修复问题，请定期检查并更新到最新版本，以免分流规则过期或 Bug 未修复。**
+> 建议每次机场订阅续费时顺手拉取一次最新版。
 
 ## 目录
 
@@ -324,12 +328,12 @@ upsertGroup(config, {
 
 1. 确认覆写已关联到对应订阅
 2. 下拉刷新订阅
-3. 确认日志中有 `[v2.0]` 前缀的输出
+3. 确认日志中有 `[v2.1]` 前缀的输出
 4. 如果日志为空，检查 FLClash 版本是否 ≥ v0.8.85
 
 ### 部分节点未出现在策略组
 
-检查节点名称是否命中了 `isInfoNode` 的过滤正则。在 FLClash 日志中搜索 `[v2.0] Valid proxies` 查看过滤后数量。
+检查节点名称是否命中了 `isInfoNode` 的过滤正则。在 FLClash 日志中搜索 `[v2.1] Valid proxies` 查看过滤后数量。
 
 ### 如何更新覆写脚本
 
