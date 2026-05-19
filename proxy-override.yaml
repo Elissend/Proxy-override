@@ -600,6 +600,8 @@ rules:
   - DOMAIN-SUFFIX,atlassian.com,节点选择
   - DOMAIN-SUFFIX,hashicorp.com,节点选择
   - DOMAIN-SUFFIX,terraform.io,节点选择
+  # --- Fedora 镜像直连（Metalink 根据来源 IP 自动分配国内镜像）---
+  - DOMAIN-SUFFIX,fedoraproject.org,DIRECT
   - GEOSITE,category-dev,节点选择
 
   # --- 苹果服务 ---
