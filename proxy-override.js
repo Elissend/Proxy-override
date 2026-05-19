@@ -13,7 +13,7 @@
 //
 // ================================================================
 
-const VERSION = 'v2.2'
+const VERSION = 'v2.3'
 
 // FlClash JS 引擎环境兼容
 var log = (typeof console !== 'undefined' && console.log) ? console.log.bind(console) : function() {}
@@ -356,6 +356,8 @@ function injectRules(config) {
   R.push('GEOSITE,pixiv,节点选择')
 
   // 字节海外专属
+  // 注：volces.com 的 apmplus / mssdk 子域名已在 anti-ad 前单独处理（DIRECT），
+  // 此处 DOMAIN-SUFFIX 规则对 volces.com 其余子域名生效（走代理）
   var bytedanceOverseas = [
     'byteoversea.com', 'byteoversea.net', 'ibytedtos.com', 'ibyteimg.com',
     'byteglb.com', 'larksuite.com', 'lark.com', 'pangle.io', 'volces.com'
