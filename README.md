@@ -2,7 +2,7 @@
 
 适用于 FLClash 的 Mihomo 内核覆写脚本。全加密 DNS、12 策略组、~180 条分流规则，导入即用，零手动配置。
 
-[![Version](https://img.shields.io/badge/version-v2.2-blue)](https://github.com/Sgraqwq/Proxy-override/releases)
+[![Version](https://img.shields.io/badge/version-v2.3-blue)](https://github.com/Sgraqwq/Proxy-override/releases)
 
 > [!IMPORTANT]
 > **本脚本会不定期更新规则和修复问题，请定期检查并更新到最新版本，以免分流规则过期或 Bug 未修复。**
@@ -111,7 +111,9 @@ proxy-providers:
          ├─ AI API        → 🤖 AI 服务  → 代理池
          ├─ Telegram      → ✈️ Telegram → 代理池
          ├─ 流媒体         → 🎬 流媒体   → 代理池
-         ├─ 海外社交/游戏/开发 → 🎯 节点选择 → 代理池
+         ├─ 游戏国服       → DIRECT
+         ├─ 游戏海外       → 🎯 节点选择 → 代理池
+         ├─ 海外社交/开发   → 🎯 节点选择 → 代理池
          ├─ 苹果/微软      → 默认 DIRECT（可切）
          ├─ 国内域名/IP    → DIRECT
          └─ 未匹配         → 🐟 漏网之鱼（MATCH）
@@ -208,6 +210,7 @@ aistudio.google.com → 单独走国外 DoH（防止国内 DNS 污染）
 | 类别 | 数量 | 典型域名/规则 |
 |------|------|----------|
 | 广告拦截 | 2 | `category-ads-all` + `anti-ad` 规则集 |
+| anti-ad 白名单 | 4 | 火山引擎 APM / 极光推送（anti-ad 误伤游戏基础设施） |
 | QUIC 阻断 | 5 | 微软/苹果/YouTube/Google 豁免 QUIC，其余非中国站点 REJECT |
 | 局域网 | 5 | `private` / `localhost` / `local` |
 | 进程直连 | 17 | 微信、QQ、远程桌面、Tailscale、frpc 等 |
@@ -219,7 +222,8 @@ aistudio.google.com → 单独走国外 DoH（防止国内 DNS 污染）
 | Telegram | 1 | `GEOSITE,telegram`（含 telegram.org / t.me / telegram.me 等） |
 | 海外社交 | 15 | 14 项 `GEOSITE` 引用（Twitter/Facebook/Instagram/Pixiv 等）+ snapchat |
 | 流媒体 | 14 | 9 项 `GEOSITE` 引用（Netflix/Spotify/Disney 等）+ 4 项硬编码 + tiktok 规则集 |
-| 游戏平台 | 1 | `GEOSITE,category-games`（含 Steam/Epic/Blizzard 等 37+ 平台） |
+| 游戏平台（国服） | 1 | `GEOSITE,category-games-cn`（米哈游/腾讯/库洛等 DIRECT） |
+| 游戏平台（海外） | 1 | `GEOSITE,category-games-!cn`（Steam/Epic/Blizzard 等走代理） |
 | 开发工具 | 42 | GitHub / Docker / JetBrains / npm / PyPI / Vercel 等 |
 | 苹果 | 5 | Apple 规则集 + `icloud.com` 直连 |
 | 微软 | 8 | Microsoft 规则集 + 商店/更新 CDN 直连 |
@@ -328,12 +332,12 @@ upsertGroup(config, {
 
 1. 确认覆写已关联到对应订阅
 2. 下拉刷新订阅
-3. 确认日志中有 `[v2.1]` 前缀的输出
+3. 确认日志中有 `[v2.3]` 前缀的输出
 4. 如果日志为空，检查 FLClash 版本是否 ≥ v0.8.85
 
 ### 部分节点未出现在策略组
 
-检查节点名称是否命中了 `isInfoNode` 的过滤正则。在 FLClash 日志中搜索 `[v2.1] Valid proxies` 查看过滤后数量。
+检查节点名称是否命中了 `isInfoNode` 的过滤正则。在 FLClash 日志中搜索 `[v2.3] Valid proxies` 查看过滤后数量。
 
 ### 如何更新覆写脚本
 
