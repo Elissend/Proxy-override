@@ -1,5 +1,5 @@
 // FlClash 覆写脚本
-// 版本：v2.2 (2026-05-18)
+// 版本：v2.3 (2026-05-19)
 // 架构：3 基础设施组 + 9 业务策略组 + 9 rule-providers + 全加密 DNS
 // 适用：FlClash >= v0.8.85；任何机场订阅
 //
@@ -268,6 +268,12 @@ function injectRules(config) {
   R.push('DOMAIN-SUFFIX,servicewechat.com,DIRECT')
   R.push('DOMAIN-SUFFIX,mp.weixin.qq.com,DIRECT')
 
+  // 火山引擎 APM / 极光推送（anti-ad 规则集误伤，米哈游等国服游戏基础设施）
+  R.push('DOMAIN,apmplus.volces.com,DIRECT')
+  R.push('DOMAIN-SUFFIX,jpush.io,DIRECT')
+  R.push('DOMAIN-SUFFIX,jpush.cn,DIRECT')
+  R.push('DOMAIN,easytomessage.com,DIRECT')
+
   // 广告拦截
   R.push('GEOSITE,category-ads-all,广告拦截')
   R.push('RULE-SET,anti-ad,广告拦截')
@@ -375,8 +381,11 @@ function injectRules(config) {
   R.push('DOMAIN-SUFFIX,peacocktv.com,流媒体')
   R.push('DOMAIN-SUFFIX,crunchyroll.com,流媒体')
 
-  // 游戏平台 (geosite:category-games 含 Steam/Epic/EA/Ubisoft/Riot/Blizzard/Nintendo/PlayStation/Xbox/GOG/Rockstar/HoYoverse 等 37+ 平台)
-  R.push('GEOSITE,category-games,节点选择')
+  // 游戏平台：国服直连，海外走代理
+  // category-games-cn 含 mihoyo-cn / tencent-games / kurogames / bilibili-game 等
+  // category-games-!cn 含 Steam / Epic / Blizzard / Nintendo / PlayStation / Xbox 等
+  R.push('GEOSITE,category-games-cn,DIRECT')
+  R.push('GEOSITE,category-games-!cn,节点选择')
 
   // 开发工具
   R.push('RULE-SET,github,节点选择')
