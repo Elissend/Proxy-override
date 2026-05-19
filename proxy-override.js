@@ -410,8 +410,10 @@ function injectRules(config) {
   for (var d = 0; d < devDomains.length; d++) {
     R.push('DOMAIN-SUFFIX,' + devDomains[d] + ',节点选择')
   }
-  // Fedora 镜像直连（Metalink 根据来源 IP 自动分配国内镜像，走代理反而被分到境外）
+  // Fedora 镜像直连（Metalink 根据来源 IP 自动分配国内镜像）
   R.push('DOMAIN-SUFFIX,fedoraproject.org,DIRECT')
+  // Fermilab 镜像（AlmaLinux 默认仓库，美国服务器，走节点选择选快节点）
+  R.push('DOMAIN-SUFFIX,linux-mirrors.fnal.gov,节点选择')
   R.push('GEOSITE,category-dev,节点选择')
 
   // 苹果服务
