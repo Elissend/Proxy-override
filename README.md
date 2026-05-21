@@ -1,8 +1,8 @@
-# FLClash Generic Proxy Override
+# ProxyOverride — 通用代理覆写配置
 
-适用于 FLClash 的 Mihomo 内核覆写脚本。全加密 DNS、12 策略组、~180 条分流规则，导入即用，零手动配置。
+适用于 FlClash / Mihomo / Egern 的全加密 DNS、12 策略组分流规则，导入即用，零手动配置。
 
-[![Version](https://img.shields.io/badge/version-v2.3-blue)](https://github.com/Sgraqwq/Proxy-override/releases)
+[![Version](https://img.shields.io/badge/version-v2.4-blue)](https://github.com/Sgraqwq/Proxy-override/releases)
 
 > [!IMPORTANT]
 > **本脚本会不定期更新规则和修复问题，请定期检查并更新到最新版本，以免分流规则过期或 Bug 未修复。**
@@ -13,6 +13,7 @@
 - [快速开始](#快速开始)
   - [JS 覆写版（推荐，支持节点过滤）](#js-覆写版推荐支持节点过滤)
   - [YAML 配置版（独立使用，免脚本）](#yaml-配置版独立使用免脚本)
+- [Egern 配置版（iOS）](#egern-配置版ios)
 - [两种版本对比](#两种版本对比)
 - [架构设计](#架构设计)
 - [DNS 技术细节](#dns-技术细节)
@@ -85,19 +86,32 @@ proxy-providers:
 
 > **注意**：YAML 版的 `proxy-provider` 无法像 JS 覆写版那样用正则过滤"剩余/到期/官网/免费"等信息节点（Mihomo RE2 正则引擎不支持负向排除）。如果订阅含大量信息节点，建议使用 JS 覆写版。
 
-## 两种版本对比
+## Egern 配置版（iOS）
 
-| 特性 | JS 覆写版 | YAML 配置版 |
-|------|----------|------------|
-| 文件 | `proxy-override.js` | `proxy-override.yaml` |
-| 适用客户端 | FLClash（推荐） | 所有 Mihomo 客户端 |
-| 节点来源 | 订阅 `proxies` 数组 | `proxy-provider` 拉取 |
-| 信息节点过滤 | ✅ 正则过滤 | ❌ YAML 无法实现 |
-| 策略组动态构建 | ✅ 按实际节点数 | ⚠️ 固定 `use` 引用 |
-| 部署复杂度 | FLClash 两步骤 | 替换订阅链接即可 |
-| 自定义便捷度 | 编辑 JS 函数 | 编辑 YAML 字段 |
+适用于 [Egern](https://egernapp.com) iOS 代理客户端。
 
-**推荐**：FLClash 用户首选 JS 覆写版；其他客户端或偏好独立配置文件的用户使用 YAML 版。
+| 文件 | 用途 |
+|------|------|
+| `egern-profile.yaml` | 完整配置，含规则 + 策略组 + DNS + 个人节点 |
+| `egern-profile-native.yaml` | 纯净模板，无节点无凭证，可分享 |
+
+**规则集来源**：[Centralmatrix3/Matrix-io](https://github.com/Centralmatrix3/Matrix-io) Egern 原生 YAML 格式。
+
+**使用方法**：Egern → 配置 → 导入 → 选择对应 yaml 文件。
+
+## 三种版本对比
+
+| 特性 | JS 覆写版 | YAML 配置版 | Egern 版 |
+|------|----------|------------|---------|
+| 文件 | `proxy-override.js` | `proxy-override.yaml` | `egern-profile.yaml` |
+| 适用客户端 | FLClash（推荐） | 所有 Mihomo 客户端 | Egern（iOS） |
+| 节点来源 | 订阅 `proxies` 数组 | `proxy-provider` 拉取 | `external` 策略组 |
+| 信息节点过滤 | ✅ 正则过滤 | ❌ YAML 无法实现 | ⚠️ `filter` 正则 |
+| 策略组动态构建 | ✅ 按实际节点数 | ⚠️ 固定 `use` 引用 | ⚠️ `flatten` 展开 |
+| 部署复杂度 | FLClash 两步骤 | 替换订阅链接即可 | 导入文件即可 |
+| 自定义便捷度 | 编辑 JS 函数 | 编辑 YAML 字段 | 编辑 YAML 字段 |
+
+**推荐**：FLClash 用户首选 JS 覆写版；其他 Mihomo 客户端使用 YAML 版；iOS 用户使用 Egern 版。
 
 ## 架构设计
 
@@ -332,7 +346,7 @@ upsertGroup(config, {
 
 1. 确认覆写已关联到对应订阅
 2. 下拉刷新订阅
-3. 确认日志中有 `[v2.3]` 前缀的输出
+3. 确认日志中有 `[v2.4]` 前缀的输出
 4. 如果日志为空，检查 FLClash 版本是否 ≥ v0.8.85
 
 ### 部分节点未出现在策略组
