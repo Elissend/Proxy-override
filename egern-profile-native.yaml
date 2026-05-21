@@ -1,0 +1,666 @@
+# Egern 代理配置
+# 版本：v1.0 (2026-05-20)
+# 从 ProxyOverride v2.3 (Clash/Mihomo) 迁移而来
+# 架构：3 基础设施组 + 9 业务策略组 + 全加密 DNS
+# 规则集来源：Centralmatrix3/Matrix-io Egern 原生格式，每日自动更新
+#
+# === 导入方法 ===
+# 1. Egern → 配置 → 导入 → 选择本文件
+# 2. 修改 external "机场订阅" 的 urls 为你的机场订阅链接
+# 3. 初次使用需等待远程规则集下载（首次冷启动部分规则可能静默跳过）
+#
+# === 格式说明 ===
+# Egern 的 external 策略组期望订阅返回 Egern 原生代理格式
+# （如 shadowsocks: / trojan: 等键名）。如机场订阅是 Clash 格式，
+# 需联系机场确认是否支持格式切换。
+#
+# ================================================================
+
+# ================================================================
+# 全局参数
+# ================================================================
+
+ipv6: false
+http_port: 3080
+socks_port: 3090
+allow_external_connections: false
+block_quic: false   # 使用规则级 AND+NOT 精确控制，不用全局一刀切
+hide_vpn_icon: false
+
+proxy_latency_test_url: "http://www.gstatic.com/generate_204"
+
+geoip_db_url: "https://rules.xkww3n.cyou/geoip_lite.dat"
+
+# 绕过隧道 / 始终真实 IP 的域名
+bypass_tunnel_proxy:
+  - "*.local"
+  - "192.168.0.0/16"
+
+real_ip_domains:
+  - "*.lan"
+  - "*.local"
+  - "*.localhost"
+  - "*.msftconnecttest.com"
+  - "*.msftncsi.com"
+  - "*.baidu.com"
+  - "*.bilibili.com"
+  - "*.bing.com"
+  - "*.chiphell.com"
+  - "*.oray.com"
+  - "*.sunlogin.com"
+  - "*.todesk.com"
+  - "*.rustdesk.com"
+  - "*.teamviewer.com"
+  - "*.anydesk.com"
+  - "*.tailscale.com"
+  - "*.zerotier.com"
+  - "*.nvidia.com"
+  - "*.ntp.org"
+  - "*.pool.ntp.org"
+  - "*.time.apple.com"
+  - "*.time.google.com"
+  - "*.time.nist.gov"
+  - "time.windows.com"
+  - "ip.cip.cc"
+  - "captive.apple.com"
+  - "connectivitycheck.gstatic.com"
+  - "id6.me"
+  - "localhost.ptlogin2.qq.com"
+  - "*.cmpassport.com"
+  - "*.mcdn.bilivideo.cn"
+  - "*.battlenet.com.cn"
+  - "*.wotgame.cn"
+  - "*.wggames.cn"
+  - "*.wowsgame.cn"
+  - "*.push.apple.com"
+
+# ================================================================
+# DNS
+# ================================================================
+# 真 DNS 模型（非 fake-ip）：
+#   Bootstrap 解析 upstream DNS 服务器域名 → 走系统 DNS
+#   Forward 规则按序匹配 → 国内域名走阿里 DNS，其余走 Cloudflare
+#   不再需要 proxy-server-nameserver（bootstrap 走系统 DNS 无循环依赖）
+
+dns:
+  bootstrap:
+    - system
+    - 223.5.5.5
+    - 119.29.29.29
+
+  upstreams:
+    alidns:
+      - https://dns.alidns.com/dns-query
+      - https://223.5.5.5/dns-query
+      - https://223.6.6.6/dns-query
+    cloudflare:
+      - https://1.1.1.1/dns-query
+      - https://1.0.0.1/dns-query
+
+  forward:
+    # aistudio.google.com 国内 DNS 污染，单独走国外 DNS
+    - domain:
+        match: "aistudio.google.com"
+        value: cloudflare
+
+    - proxy_rule_set:
+        match: "https://raw.githubusercontent.com/Centralmatrix3/Matrix-io/master/Egern/Ruleset/ChinaMax.yaml"
+        value: alidns
+        update_interval: 86400
+
+    - domain_suffix:
+        match: "cn"
+        value: alidns
+
+    - domain_wildcard:
+        match: "*"
+        value: cloudflare
+
+  block_ips:
+    - 127.0.0.1/32
+    - 0.0.0.0/32
+
+  public_ip_lookup_url: "https://ifconfig.me/ip"
+
+# ================================================================
+# 策略组
+# ================================================================
+
+policy_groups:
+
+  # --- 机场订阅 ---
+  - external:
+      name: "机场订阅"
+      type: select
+      urls:
+        - "https://你的机场订阅链接"
+      update_interval: 86400
+      icon: "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Airport.png"
+
+  # --- 基础设施组（3 个） ---
+
+  - select:
+      name: "节点选择"
+      policies:
+        - 自动选择
+        - 故障转移
+        - 机场订阅
+        - DIRECT
+      flatten: false
+      icon: "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Available.png"
+
+  - auto_test:
+      name: "自动选择"
+      policies:
+        - 机场订阅
+      flatten: false
+      interval: 300
+      tolerance: 150
+      timeout: 5
+      icon: "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Auto.png"
+
+  - fallback:
+      name: "故障转移"
+      policies:
+        - 机场订阅
+      flatten: false
+      interval: 300
+      timeout: 5
+      icon: "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Round_Robin.png"
+
+  # --- 业务策略组（9 个） ---
+
+  - select:
+      name: "AI 服务"
+      policies:
+        - 节点选择
+        - 自动选择
+        - 故障转移
+        - 机场订阅
+        - DIRECT
+      flatten: false
+      icon: "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Bot.png"
+
+  - select:
+      name: "YouTube"
+      policies:
+        - 节点选择
+        - 自动选择
+        - 故障转移
+        - 机场订阅
+        - DIRECT
+      flatten: false
+      icon: "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/YouTube.png"
+
+  - select:
+      name: "Telegram"
+      policies:
+        - 节点选择
+        - 自动选择
+        - 故障转移
+        - 机场订阅
+        - DIRECT
+      flatten: false
+      icon: "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Telegram.png"
+
+  - select:
+      name: "流媒体"
+      policies:
+        - 节点选择
+        - 自动选择
+        - 故障转移
+        - 机场订阅
+        - DIRECT
+      flatten: false
+      icon: "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/ForeignMedia.png"
+
+  - select:
+      name: "苹果服务"
+      policies:
+        - DIRECT
+        - 节点选择
+        - 自动选择
+        - 故障转移
+        - 机场订阅
+      flatten: false
+      icon: "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Apple.png"
+
+  - select:
+      name: "微软服务"
+      policies:
+        - DIRECT
+        - 节点选择
+        - 自动选择
+        - 故障转移
+        - 机场订阅
+      flatten: false
+      icon: "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Microsoft.png"
+
+  - select:
+      name: "国内直连"
+      policies:
+        - DIRECT
+      icon: "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Direct.png"
+
+  - select:
+      name: "广告拦截"
+      policies:
+        - REJECT
+        - DIRECT
+      icon: "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/AdBlack.png"
+
+  - select:
+      name: "漏网之鱼"
+      policies:
+        - 节点选择
+        - 自动选择
+        - 故障转移
+        - 机场订阅
+        - DIRECT
+        - REJECT
+      flatten: false
+      icon: "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Final.png"
+
+# ================================================================
+# 规则
+# ================================================================
+# 顺序 = 优先级，首次命中停止
+#
+#   1. 微信/APM/推送 → DIRECT（在广告拦截前放行）
+#   2. 广告拦截 → Advertising.yaml
+#   3. QUIC 阻断（豁免 微软/苹果/YouTube/Google）
+#   4. 局域网/私有 → DIRECT
+#   5. 前置 → 节点选择
+#   6. 业务分流 → 各策略组（YouTube/AI/Telegram/流媒体/Apple/MS/CN）
+#   7. 国内直连 → ChinaMax.yaml
+#   8. 境外代理 → Global.yaml
+#   9. 兜底 → 漏网之鱼
+
+rules:
+
+  # ========== 1. 微信小程序 / APM / 推送（优先放行，防广告规则误伤） ==========
+  - domain_suffix: { match: "wxs.qq.com", policy: DIRECT }
+  - domain_suffix: { match: "wx.qlogo.cn", policy: DIRECT }
+  - domain_suffix: { match: "servicewechat.com", policy: DIRECT }
+  - domain_suffix: { match: "mp.weixin.qq.com", policy: DIRECT }
+  - domain: { match: "school-wx.qshnhealth.com", policy: DIRECT }
+  - domain: { match: "apmplus.volces.com", policy: DIRECT }
+  - domain_suffix: { match: "jpush.io", policy: DIRECT }
+  - domain_suffix: { match: "jpush.cn", policy: DIRECT }
+  - domain: { match: "easytomessage.com", policy: DIRECT }
+  # 友盟推送 / 错误日志（国内大量 App 依赖，被广告规则误伤后通知/崩溃上报失效）
+  - domain: { match: "msg.umeng.com", policy: DIRECT }
+  - domain: { match: "msg.umengcloud.com", policy: DIRECT }
+  - domain: { match: "errlog.umeng.com", policy: DIRECT }
+  # 归因 SDK（App 安装统计，被拦后冷启动校验失败）
+  - domain: { match: "app.adjust.com", policy: DIRECT }
+  - domain: { match: "app.appsflyer.com", policy: DIRECT }
+  # 公共 CDN（大量网站和小程序前端资源托管于此）
+  - domain_suffix: { match: "baomitu.com", policy: DIRECT }
+  - domain_suffix: { match: "bootcss.com", policy: DIRECT }
+  - domain_suffix: { match: "staticfile.org", policy: DIRECT }
+  - domain_suffix: { match: "upaiyun.com", policy: DIRECT }
+
+  # ========== 2. 广告拦截 ==========
+  - rule_set:
+      match: "https://raw.githubusercontent.com/Centralmatrix3/Matrix-io/master/Egern/Ruleset/Advertising.yaml"
+      policy: 广告拦截
+      update_interval: 86400
+
+  # ========== 3. QUIC 阻断 ==========
+  # 主动 REJECT UDP 443 触发浏览器 TCP 回退。
+  # 豁免：微软/苹果/YouTube/Google（QUIC 重度依赖者）
+  # 其余非中国站点 QUIC → REJECT
+  - and:
+      match:
+        - dest_port: { match: "443" }
+        - protocol: { match: udp }
+        - rule_set:
+            match: "https://raw.githubusercontent.com/Centralmatrix3/Matrix-io/master/Egern/Ruleset/Microsoft.yaml"
+            update_interval: 86400
+      policy: 微软服务
+  - and:
+      match:
+        - dest_port: { match: "443" }
+        - protocol: { match: udp }
+        - domain_suffix: { match: "apple.com" }
+      policy: 苹果服务
+  - and:
+      match:
+        - dest_port: { match: "443" }
+        - protocol: { match: udp }
+        - rule_set:
+            match: "https://raw.githubusercontent.com/Centralmatrix3/Matrix-io/master/Egern/Ruleset/YouTube.yaml"
+            update_interval: 86400
+      policy: YouTube
+  - and:
+      match:
+        - dest_port: { match: "443" }
+        - protocol: { match: udp }
+        - domain_suffix: { match: "google.com" }
+      policy: 节点选择
+  - and:
+      match:
+        - dest_port: { match: "443" }
+        - protocol: { match: udp }
+        - not:
+            match:
+              domain_suffix: { match: "cn" }
+      policy: REJECT
+
+  # ========== 4. 局域网 / 私有网络 ==========
+  - dest_port: { match: "7680", policy: REJECT }
+  - rule_set:
+      match: "https://raw.githubusercontent.com/Centralmatrix3/Matrix-io/master/Egern/Ruleset/LAN.yaml"
+      policy: DIRECT
+      update_interval: 86400
+  - geoip: { match: PRIVATE, policy: DIRECT, no_resolve: true }
+  - domain: { match: "localhost", policy: DIRECT }
+  - domain_suffix: { match: "local", policy: DIRECT }
+
+  # ========== 5. 前置拦截（确保规则集和 DNS 下载可用） ==========
+  - domain_suffix: { match: "jsdelivr.net", policy: 节点选择 }
+  - domain: { match: "dns.google", policy: 节点选择 }
+  - domain: { match: "dns.google.com", policy: 节点选择 }
+
+  # ========== 6. YouTube ==========
+  - rule_set:
+      match: "https://raw.githubusercontent.com/Centralmatrix3/Matrix-io/master/Egern/Ruleset/YouTube.yaml"
+      policy: YouTube
+      update_interval: 86400
+
+  # ========== 7. AI 服务 ==========
+  - rule_set:
+      match: "https://raw.githubusercontent.com/Centralmatrix3/Matrix-io/master/Egern/Ruleset/OpenAI.yaml"
+      policy: AI 服务
+      update_interval: 86400
+  - rule_set:
+      match: "https://raw.githubusercontent.com/Centralmatrix3/Matrix-io/master/Egern/Ruleset/Claude.yaml"
+      policy: AI 服务
+      update_interval: 86400
+  - rule_set:
+      match: "https://raw.githubusercontent.com/Centralmatrix3/Matrix-io/master/Egern/Ruleset/Google.yaml"
+      policy: AI 服务
+      update_interval: 86400
+  # 以下域名已包含在上方 rule_set 中，冷启动 rule_set 未就绪时作为兜底
+  - domain_suffix: { match: "chatgpt.com", policy: AI 服务 }
+  - domain_suffix: { match: "oaistatic.com", policy: AI 服务 }
+  - domain_suffix: { match: "oaiusercontent.com", policy: AI 服务 }
+  - domain_suffix: { match: "sora.com", policy: AI 服务 }
+  - domain_suffix: { match: "claude.ai", policy: AI 服务 }
+  - domain_suffix: { match: "anthropic.com", policy: AI 服务 }
+  - domain_suffix: { match: "ai.google.dev", policy: AI 服务 }
+  - domain_suffix: { match: "generativelanguage.googleapis.com", policy: AI 服务 }
+  - domain_suffix: { match: "mistral.ai", policy: AI 服务 }
+  - domain_suffix: { match: "perplexity.ai", policy: AI 服务 }
+  - domain_suffix: { match: "cohere.ai", policy: AI 服务 }
+  - domain_suffix: { match: "cohere.com", policy: AI 服务 }
+  - domain_suffix: { match: "midjourney.com", policy: AI 服务 }
+  - domain_suffix: { match: "stability.ai", policy: AI 服务 }
+  - domain_suffix: { match: "cursor.com", policy: AI 服务 }
+  - domain_suffix: { match: "cursor.sh", policy: AI 服务 }
+  - domain_suffix: { match: "huggingface.co", policy: AI 服务 }
+  - domain_suffix: { match: "replicate.com", policy: AI 服务 }
+  - domain_suffix: { match: "together.ai", policy: AI 服务 }
+  - domain_suffix: { match: "suno.ai", policy: AI 服务 }
+  - domain_suffix: { match: "suno.com", policy: AI 服务 }
+  - domain_suffix: { match: "openrouter.ai", policy: AI 服务 }
+  - domain_suffix: { match: "runpod.io", policy: AI 服务 }
+  - domain_suffix: { match: "x.ai", policy: AI 服务 }
+  - domain_suffix: { match: "grok.com", policy: AI 服务 }
+  - rule_set:
+      match: "https://raw.githubusercontent.com/Centralmatrix3/Matrix-io/master/Egern/Ruleset/Copilot.yaml"
+      policy: AI 服务
+      update_interval: 86400
+
+  # Google 基础服务（在 AI 子域名之后，避免遮蔽）
+  - domain_suffix: { match: "gstatic.com", policy: 节点选择 }
+  - domain_suffix: { match: "googleapis.com", policy: 节点选择 }
+
+  - domain_suffix: { match: "deepseek.com", policy: 国内直连 }
+
+  # ========== 8. Telegram ==========
+  - rule_set:
+      match: "https://raw.githubusercontent.com/Centralmatrix3/Matrix-io/master/Egern/Ruleset/Telegram.yaml"
+      policy: Telegram
+      update_interval: 86400
+
+  # ========== 9. 海外社交 ==========
+  - rule_set:
+      match: "https://raw.githubusercontent.com/Centralmatrix3/Matrix-io/master/Egern/Ruleset/Twitter.yaml"
+      policy: 节点选择
+      update_interval: 86400
+  - rule_set:
+      match: "https://raw.githubusercontent.com/Centralmatrix3/Matrix-io/master/Egern/Ruleset/Facebook.yaml"
+      policy: 节点选择
+      update_interval: 86400
+  # Instagram 不在 Facebook.yaml 中，Matrix-io 无独立规则集，硬编码
+  - domain_suffix: { match: "instagram.com", policy: 节点选择 }
+  - domain_suffix: { match: "cdninstagram.com", policy: 节点选择 }
+  - domain_suffix: { match: "threads.net", policy: 节点选择 }
+  # LINE / PayPal 域名少，硬编码省 HTTP 请求
+  - domain_suffix: { match: "line.me", policy: 节点选择 }
+  - domain_suffix: { match: "line.naver.jp", policy: 节点选择 }
+  - domain_suffix: { match: "line-scdn.net", policy: 节点选择 }
+  - domain_suffix: { match: "line-apps.com", policy: 节点选择 }
+  - domain_suffix: { match: "paypal.com", policy: 节点选择 }
+  - domain_suffix: { match: "paypalobjects.com", policy: 节点选择 }
+
+  # ========== 10. 字节跳动海外 ==========
+  - domain_suffix: { match: "byteoversea.com", policy: 节点选择 }
+  - domain_suffix: { match: "byteoversea.net", policy: 节点选择 }
+  - domain_suffix: { match: "ibytedtos.com", policy: 节点选择 }
+  - domain_suffix: { match: "ibyteimg.com", policy: 节点选择 }
+  - domain_suffix: { match: "byteglb.com", policy: 节点选择 }
+  - domain_suffix: { match: "larksuite.com", policy: 节点选择 }
+  - domain_suffix: { match: "lark.com", policy: 节点选择 }
+  - domain_suffix: { match: "pangle.io", policy: 节点选择 }
+  - domain_suffix: { match: "volces.com", policy: 节点选择 }
+
+  # ========== 11. 流媒体 ==========
+  - rule_set:
+      match: "https://raw.githubusercontent.com/Centralmatrix3/Matrix-io/master/Egern/Ruleset/Netflix.yaml"
+      policy: 流媒体
+      update_interval: 86400
+  - rule_set:
+      match: "https://raw.githubusercontent.com/Centralmatrix3/Matrix-io/master/Egern/Ruleset/Spotify.yaml"
+      policy: 流媒体
+      update_interval: 86400
+  - rule_set:
+      match: "https://raw.githubusercontent.com/Centralmatrix3/Matrix-io/master/Egern/Ruleset/HBO.yaml"
+      policy: 流媒体
+      update_interval: 86400
+  - rule_set:
+      match: "https://raw.githubusercontent.com/Centralmatrix3/Matrix-io/master/Egern/Ruleset/Hulu.yaml"
+      policy: 流媒体
+      update_interval: 86400
+  - rule_set:
+      match: "https://raw.githubusercontent.com/Centralmatrix3/Matrix-io/master/Egern/Ruleset/TikTok.yaml"
+      policy: 流媒体
+      update_interval: 86400
+  - rule_set:
+      match: "https://raw.githubusercontent.com/Centralmatrix3/Matrix-io/master/Egern/Ruleset/Twitch.yaml"
+      policy: 流媒体
+      update_interval: 86400
+  # 亚洲流媒体（域名少，硬编码省 HTTP 请求）
+  - domain_suffix: { match: "bahamut.com.tw", policy: 流媒体 }
+  - domain_suffix: { match: "gamer.com.tw", policy: 流媒体 }
+  - domain_suffix: { match: "dmm.com", policy: 流媒体 }
+  - domain_suffix: { match: "dmm.co.jp", policy: 流媒体 }
+  - domain_suffix: { match: "nicovideo.jp", policy: 流媒体 }
+  - domain_suffix: { match: "nimg.jp", policy: 流媒体 }
+  - domain_suffix: { match: "dmc.nico", policy: 流媒体 }
+  # Matrix-io 未覆盖的（硬编码）
+  - domain_suffix: { match: "disney.com", policy: 流媒体 }
+  - domain_suffix: { match: "disneyplus.com", policy: 流媒体 }
+  - domain_suffix: { match: "primevideo.com", policy: 流媒体 }
+  - domain_suffix: { match: "amazonvideo.com", policy: 流媒体 }
+  - domain_suffix: { match: "vimeo.com", policy: 流媒体 }
+  - domain_suffix: { match: "dailymotion.com", policy: 流媒体 }
+  - domain_suffix: { match: "discoveryplus.com", policy: 流媒体 }
+  - domain_suffix: { match: "paramountplus.com", policy: 流媒体 }
+  - domain_suffix: { match: "peacocktv.com", policy: 流媒体 }
+  - domain_suffix: { match: "crunchyroll.com", policy: 流媒体 }
+
+  # ========== 12. 游戏平台 ==========
+  # 国服直连
+  - domain_suffix: { match: "mihoyo.com", policy: DIRECT }
+  - domain_suffix: { match: "hoyoverse.com", policy: DIRECT }
+  - domain_suffix: { match: "battlenet.com.cn", policy: DIRECT }
+  - domain_suffix: { match: "wotgame.cn", policy: DIRECT }
+  - domain_suffix: { match: "wggames.cn", policy: DIRECT }
+  - domain_suffix: { match: "wowsgame.cn", policy: DIRECT }
+  - domain_suffix: { match: "tencent.com", policy: DIRECT }
+  # 海外 / Steam → 节点选择
+  - rule_set:
+      match: "https://raw.githubusercontent.com/Centralmatrix3/Matrix-io/master/Egern/Ruleset/Steam.yaml"
+      policy: 节点选择
+      update_interval: 86400
+  - domain_suffix: { match: "epicgames.com", policy: 节点选择 }
+  - domain_suffix: { match: "blizzard.com", policy: 节点选择 }
+  - domain_suffix: { match: "nintendo.com", policy: 节点选择 }
+  - domain_suffix: { match: "playstation.com", policy: 节点选择 }
+  - domain_suffix: { match: "xbox.com", policy: 节点选择 }
+
+  # ========== 13. 开发工具 ==========
+  # Matrix-io 覆盖的服务
+  - rule_set:
+      match: "https://raw.githubusercontent.com/Centralmatrix3/Matrix-io/master/Egern/Ruleset/GitHub.yaml"
+      policy: 节点选择
+      update_interval: 86400
+  - rule_set:
+      match: "https://raw.githubusercontent.com/Centralmatrix3/Matrix-io/master/Egern/Ruleset/GitLab.yaml"
+      policy: 节点选择
+      update_interval: 86400
+  - rule_set:
+      match: "https://raw.githubusercontent.com/Centralmatrix3/Matrix-io/master/Egern/Ruleset/Docker.yaml"
+      policy: 节点选择
+      update_interval: 86400
+  - rule_set:
+      match: "https://raw.githubusercontent.com/Centralmatrix3/Matrix-io/master/Egern/Ruleset/Vercel.yaml"
+      policy: 节点选择
+      update_interval: 86400
+  - rule_set:
+      match: "https://raw.githubusercontent.com/Centralmatrix3/Matrix-io/master/Egern/Ruleset/Heroku.yaml"
+      policy: 节点选择
+      update_interval: 86400
+  # 未覆盖的（硬编码）
+  - domain_suffix: { match: "netlify.com", policy: 节点选择 }
+  - domain_suffix: { match: "netlify.app", policy: 节点选择 }
+  - domain_suffix: { match: "pages.dev", policy: 节点选择 }
+  - domain_suffix: { match: "workers.dev", policy: 节点选择 }
+  - domain_suffix: { match: "bitbucket.org", policy: 节点选择 }
+  - domain_suffix: { match: "digitalocean.com", policy: 节点选择 }
+  - domain_suffix: { match: "vultr.com", policy: 节点选择 }
+  - domain_suffix: { match: "fly.io", policy: 节点选择 }
+  - domain_suffix: { match: "render.com", policy: 节点选择 }
+  - domain_suffix: { match: "sentry.io", policy: 节点选择 }
+  - domain_suffix: { match: "postman.com", policy: 节点选择 }
+  - domain_suffix: { match: "notion.so", policy: 节点选择 }
+  - domain_suffix: { match: "figma.com", policy: 节点选择 }
+  - domain_suffix: { match: "atlassian.com", policy: 节点选择 }
+  - domain_suffix: { match: "hashicorp.com", policy: 节点选择 }
+  - domain_suffix: { match: "terraform.io", policy: 节点选择 }
+  - domain_suffix: { match: "repo.maven.apache.org", policy: 节点选择 }
+  - domain_suffix: { match: "maven.apache.org", policy: 节点选择 }
+  - domain_suffix: { match: "jetbrains.com", policy: 节点选择 }
+  - domain_suffix: { match: "jetbrains.space", policy: 节点选择 }
+  - domain_suffix: { match: "jetbrains.net", policy: 节点选择 }
+  - domain_suffix: { match: "npmjs.org", policy: 节点选择 }
+  - domain_suffix: { match: "npmjs.com", policy: 节点选择 }
+  - domain_suffix: { match: "yarnpkg.com", policy: 节点选择 }
+  - domain_suffix: { match: "pypi.org", policy: 节点选择 }
+  - domain_suffix: { match: "pythonhosted.org", policy: 节点选择 }
+  - domain_suffix: { match: "crates.io", policy: 节点选择 }
+  - domain_suffix: { match: "rubygems.org", policy: 节点选择 }
+  - domain_suffix: { match: "nuget.org", policy: 节点选择 }
+  - domain_suffix: { match: "packagist.org", policy: 节点选择 }
+  - domain_suffix: { match: "stackoverflow.com", policy: 节点选择 }
+  - domain_suffix: { match: "stackexchange.com", policy: 节点选择 }
+  - domain_suffix: { match: "fedoraproject.org", policy: DIRECT }
+  - domain_suffix: { match: "almalinux.org", policy: 节点选择 }
+  - domain_suffix: { match: "linux-mirrors.fnal.gov", policy: 节点选择 }
+
+  # ========== 14. 苹果服务 ==========
+  # icloud.com 强制直连（iCloud 贵州、风控）
+  - domain_suffix: { match: "icloud.com", policy: DIRECT }
+  # Matrix-io Apple 规则集：覆盖 apple.com / icloud / mzstatic / appstore / itunes / cdn-apple 等
+  - rule_set:
+      match: "https://raw.githubusercontent.com/Centralmatrix3/Matrix-io/master/Egern/Ruleset/Apple.yaml"
+      policy: 苹果服务
+      update_interval: 86400
+
+  # ========== 15. 微软服务 ==========
+  - domain_suffix: { match: "storeedge.microsoft.com", policy: DIRECT }
+  - domain_suffix: { match: "mp.microsoft.com", policy: DIRECT }
+  - rule_set:
+      match: "https://raw.githubusercontent.com/Centralmatrix3/Matrix-io/master/Egern/Ruleset/Microsoft.yaml"
+      policy: 微软服务
+      update_interval: 86400
+  # 以下域名已包含在 Microsoft.yaml 中，冷启动兜底
+  - domain_suffix: { match: "microsoft.cn", policy: 微软服务 }
+  - domain_suffix: { match: "msn.com", policy: 微软服务 }
+  - domain_suffix: { match: "live.com", policy: 微软服务 }
+
+  # ========== 16. 国内网站 ==========
+  # 以下域名直连（不经过"国内直连"策略组），保持和 Clash 版一致
+  - rule_set:
+      match: "https://raw.githubusercontent.com/Centralmatrix3/Matrix-io/master/Egern/Ruleset/BiliBili.yaml"
+      policy: 国内直连
+      update_interval: 86400
+  - domain_suffix: { match: "baidu.com", policy: DIRECT }
+  - domain_suffix: { match: "bdstatic.com", policy: DIRECT }
+  - domain_suffix: { match: "alicdn.com", policy: DIRECT }
+  - domain_suffix: { match: "alipay.com", policy: DIRECT }
+  - domain_suffix: { match: "taobao.com", policy: DIRECT }
+  - domain_suffix: { match: "aliyuncs.com", policy: DIRECT }
+  - domain_suffix: { match: "qcloud.com", policy: DIRECT }
+  - domain_suffix: { match: "myqcloud.com", policy: DIRECT }
+  - domain_suffix: { match: "feishu.cn", policy: DIRECT }
+  - domain_suffix: { match: "dingtalk.com", policy: DIRECT }
+  - domain_suffix: { match: "163.com", policy: DIRECT }
+  - domain_suffix: { match: "126.com", policy: DIRECT }
+  - domain_suffix: { match: "126.net", policy: DIRECT }
+  - domain_suffix: { match: "chiphell.com", policy: DIRECT }
+  - domain_suffix: { match: "xindazhilian.com", policy: DIRECT }
+
+  # ========== 17. 端口直连 ==========
+  - dest_port: { match: "123", policy: DIRECT }
+  - dest_port: { match: "3478", policy: DIRECT }
+  - dest_port: { match: "3479", policy: DIRECT }
+  - dest_port: { match: "33068", policy: DIRECT }
+  - dest_port: { match: "6540", policy: DIRECT }
+  - dest_port: { match: "26880", policy: DIRECT }
+
+  # ========== 18. Google .cn 防误伤 ==========
+  - domain_suffix: { match: "services.googleapis.cn", policy: 节点选择 }
+  - domain_suffix: { match: "googleapis.cn", policy: 节点选择 }
+
+  # ========== 19. 测速直连 ==========
+  - rule_set:
+      match: "https://raw.githubusercontent.com/Centralmatrix3/Matrix-io/master/Egern/Ruleset/Speedtest.yaml"
+      policy: DIRECT
+      update_interval: 86400
+
+  # ========== 20. 基础分流 ==========
+  # 中国域名 → 直连
+  - rule_set:
+      match: "https://raw.githubusercontent.com/Centralmatrix3/Matrix-io/master/Egern/Ruleset/ChinaMax.yaml"
+      policy: 国内直连
+      update_interval: 86400
+
+  # 中国 IP → 直连
+  - rule_set:
+      match: "https://raw.githubusercontent.com/Centralmatrix3/Matrix-io/master/Egern/Ruleset/CNCIDR.yaml"
+      policy: 国内直连
+      update_interval: 86400
+  - geoip: { match: CN, policy: 国内直连, no_resolve: true }
+
+  # 境外 / GFW 域名 → 走代理
+  - rule_set:
+      match: "https://raw.githubusercontent.com/Centralmatrix3/Matrix-io/master/Egern/Ruleset/Global.yaml"
+      policy: 节点选择
+      update_interval: 86400
+
+  # ========== 21. 兜底 ==========
+  - default: { policy: 漏网之鱼 }
