@@ -273,6 +273,24 @@ function injectRules(config) {
   R.push('DOMAIN-SUFFIX,jpush.io,DIRECT')
   R.push('DOMAIN-SUFFIX,jpush.cn,DIRECT')
   R.push('DOMAIN,easytomessage.com,DIRECT')
+  // 友盟推送/错误日志（国内大量 App 依赖）
+  R.push('DOMAIN,msg.umeng.com,DIRECT')
+  R.push('DOMAIN,msg.umengcloud.com,DIRECT')
+  R.push('DOMAIN,errlog.umeng.com,DIRECT')
+  // 归因 SDK（Adjust/AppsFlyer，国内 App 广泛集成，被广告规则误伤）
+  R.push('DOMAIN,app.adjust.com,DIRECT')
+  R.push('DOMAIN,app.appsflyer.com,DIRECT')
+  // 公共 CDN
+  R.push('DOMAIN-SUFFIX,baomitu.com,DIRECT')
+  R.push('DOMAIN-SUFFIX,bootcss.com,DIRECT')
+  R.push('DOMAIN-SUFFIX,staticfile.org,DIRECT')
+  R.push('DOMAIN-SUFFIX,upaiyun.com,DIRECT')
+  // Android 系统服务（被墙，走代理；广告规则可能误伤需前置放行）
+  R.push('DOMAIN-SUFFIX,mtalk.google.com,节点选择')
+  R.push('DOMAIN,clientservices.googleapis.com,节点选择')
+  R.push('DOMAIN,update.googleapis.com,节点选择')
+  R.push('DOMAIN-SUFFIX,dl.google.com,节点选择')
+  R.push('DOMAIN-SUFFIX,dl.l.google.com,节点选择')
 
   // 广告拦截
   R.push('GEOSITE,category-ads-all,广告拦截')
@@ -412,7 +430,9 @@ function injectRules(config) {
   }
   // Fedora 镜像直连（Metalink 根据来源 IP 自动分配国内镜像）
   R.push('DOMAIN-SUFFIX,fedoraproject.org,DIRECT')
-  // Fermilab 镜像（AlmaLinux 默认仓库，美国服务器，走节点选择选快节点）
+  // AlmaLinux 镜像列表被 GFW 阻断，走代理
+  R.push('DOMAIN-SUFFIX,almalinux.org,节点选择')
+  // Fermilab 镜像（AlmaLinux 默认仓库，美国服务器）
   R.push('DOMAIN-SUFFIX,linux-mirrors.fnal.gov,节点选择')
   R.push('GEOSITE,category-dev,节点选择')
 

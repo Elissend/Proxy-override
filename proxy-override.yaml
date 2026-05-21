@@ -422,6 +422,24 @@ rules:
   - DOMAIN-SUFFIX,jpush.io,DIRECT
   - DOMAIN-SUFFIX,jpush.cn,DIRECT
   - DOMAIN,easytomessage.com,DIRECT
+  # 友盟推送/错误日志（国内大量 App 依赖）
+  - DOMAIN,msg.umeng.com,DIRECT
+  - DOMAIN,msg.umengcloud.com,DIRECT
+  - DOMAIN,errlog.umeng.com,DIRECT
+  # 归因 SDK（Adjust/AppsFlyer，国内 App 广泛集成，被广告规则误伤）
+  - DOMAIN,app.adjust.com,DIRECT
+  - DOMAIN,app.appsflyer.com,DIRECT
+  # 公共 CDN
+  - DOMAIN-SUFFIX,baomitu.com,DIRECT
+  - DOMAIN-SUFFIX,bootcss.com,DIRECT
+  - DOMAIN-SUFFIX,staticfile.org,DIRECT
+  - DOMAIN-SUFFIX,upaiyun.com,DIRECT
+  # Android 系统服务（被墙，走代理；广告规则可能误伤需前置放行）
+  - DOMAIN-SUFFIX,mtalk.google.com,节点选择
+  - DOMAIN,clientservices.googleapis.com,节点选择
+  - DOMAIN,update.googleapis.com,节点选择
+  - DOMAIN-SUFFIX,dl.google.com,节点选择
+  - DOMAIN-SUFFIX,dl.l.google.com,节点选择
 
   # --- 广告拦截 ---
   - GEOSITE,category-ads-all,广告拦截
@@ -602,7 +620,8 @@ rules:
   - DOMAIN-SUFFIX,terraform.io,节点选择
   # --- Fedora 镜像直连（Metalink 根据来源 IP 自动分配国内镜像）---
   - DOMAIN-SUFFIX,fedoraproject.org,DIRECT
-  # --- Fermilab 镜像（AlmaLinux 默认仓库，美国服务器）---
+  # AlmaLinux 镜像列表被 GFW 阻断，走代理
+  - DOMAIN-SUFFIX,almalinux.org,节点选择
   - DOMAIN-SUFFIX,linux-mirrors.fnal.gov,节点选择
   - GEOSITE,category-dev,节点选择
 
