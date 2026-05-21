@@ -227,7 +227,7 @@ proxy-groups:
 
   - name: AI
     type: select
-    icon: "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Bot.png"
+    icon: "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/ChatGPT.png"
     use:
       - sub
     proxies:

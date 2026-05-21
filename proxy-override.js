@@ -174,7 +174,7 @@ function buildProxyGroups(config, c) {
   // 业务策略组 — 节点选择排最前，后面跟全部节点
   var bizGroup = ['节点选择', '自动选择', '故障转移'].concat(allNodes).concat(['DIRECT'])
 
-  upsertGroup(config, { name: 'AI',       type: 'select', icon: ICON + 'Bot.png',           proxies: bizGroup.slice() })
+  upsertGroup(config, { name: 'AI',       type: 'select', icon: ICON + 'ChatGPT.png',           proxies: bizGroup.slice() })
   upsertGroup(config, { name: 'YouTube',  type: 'select', icon: ICON + 'YouTube.png',       proxies: bizGroup.slice() })
   upsertGroup(config, { name: 'Telegram', type: 'select', icon: ICON + 'Telegram.png',      proxies: bizGroup.slice() })
   upsertGroup(config, { name: '海外社交', type: 'select', icon: ICON + 'Discord.png',       proxies: bizGroup.slice() })
