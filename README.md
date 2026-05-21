@@ -1,8 +1,8 @@
 # ProxyOverride — 通用代理覆写配置
 
-适用于 FlClash / Mihomo / Egern 的全加密 DNS、12 策略组分流规则，导入即用，零手动配置。
+适用于 FlClash / Mihomo / Egern 的全加密 DNS、16 策略组分流规则，导入即用，零手动配置。
 
-[![Version](https://img.shields.io/badge/version-v2.4-blue)](https://github.com/Sgraqwq/Proxy-override/releases)
+[![Version](https://img.shields.io/badge/version-v3.0-blue)](https://github.com/Sgraqwq/Proxy-override/releases)
 
 > **本脚本会不定期更新规则和修复问题，请定期检查并更新到最新版本。**
 
@@ -111,12 +111,14 @@ FLClash 用户推荐 JS 覆写版；其他 Mihomo 客户端使用 YAML 版；iOS
          ├─ QUIC UDP 阻断   → REJECT（微软/苹果/YouTube/Google 豁免）
          ├─ 局域网/私有     → DIRECT
          ├─ YouTube         → YouTube 策略组
-         ├─ AI 服务         → AI 服务策略组
+         ├─ AI              → AI 策略组
          ├─ Telegram        → Telegram 策略组
+         ├─ 海外社交        → 海外社交策略组
          ├─ 流媒体          → 流媒体策略组
+         ├─ Google          → Google 策略组
+         ├─ 开发工具        → 开发工具策略组
+         ├─ 海外游戏        → 海外游戏策略组
          ├─ 游戏国服        → DIRECT
-         ├─ 游戏海外        → 节点选择
-         ├─ 海外社交/开发   → 节点选择
          ├─ 苹果/微软       → 默认 DIRECT（可手动切换）
          ├─ 国内域名/IP     → DIRECT
          └─ 未匹配          → 漏网之鱼（MATCH）
@@ -160,16 +162,20 @@ aistudio.google.com → 单独走国外 DoH（防止国内 DNS 污染）
 | 自动选择 | url-test | 300s 测速 gstatic.com/generate_204，延迟最低胜出，tolerance=150ms |
 | 故障转移 | fallback | 按序尝试，首个可用即为选中，300s 重检 |
 
-### 业务策略组（9 个）
+### 业务策略组（13 个）
 
 | 组 | 默认策略 | 可用选项 |
 |----|----------|----------|
-| AI 服务 | 节点选择 | 全部节点 + DIRECT |
+| AI | 节点选择 | 全部节点 + DIRECT |
 | YouTube | 节点选择 | 全部节点 + DIRECT |
 | Telegram | 节点选择 | 全部节点 + DIRECT |
+| 海外社交 | 节点选择 | 全部节点 + DIRECT |
 | 流媒体 | 节点选择 | 全部节点 + DIRECT |
-| 苹果服务 | DIRECT | DIRECT + 全部节点 |
-| 微软服务 | DIRECT | DIRECT + 全部节点 |
+| Google | 节点选择 | 全部节点 + DIRECT |
+| 开发工具 | 节点选择 | 全部节点 + DIRECT |
+| 海外游戏 | 节点选择 | 全部节点 + DIRECT |
+| 苹果 | DIRECT | DIRECT + 全部节点 |
+| 微软 | DIRECT | DIRECT + 全部节点 |
 | 国内直连 | DIRECT | DIRECT |
 | 广告拦截 | REJECT | REJECT / DIRECT |
 | 漏网之鱼 | 节点选择 | 全部节点 + DIRECT + REJECT |
@@ -301,12 +307,12 @@ FLClash → 配置 → 点击订阅 → 日志 → 搜索目标域名 → 确认
 
 1. 确认覆写已关联到对应订阅
 2. 下拉刷新订阅
-3. 确认日志中有 `[v2.4]` 前缀的输出
+3. 确认日志中有 `[v3.0]` 前缀的输出
 4. 如果日志为空，检查 FLClash 版本是否 ≥ v0.8.85
 
 ### 部分节点未出现在策略组
 
-检查节点名称是否命中了 `isInfoNode` 的过滤正则。在 FLClash 日志中搜索 `[v2.4] Valid proxies` 查看过滤后数量。
+检查节点名称是否命中了 `isInfoNode` 的过滤正则。在 FLClash 日志中搜索 `[v2.5] Valid proxies` 查看过滤后数量。
 
 ### 如何更新覆写脚本
 

@@ -1,6 +1,6 @@
 // FlClash 覆写脚本
-// 版本：v2.4 (2026-05-21)
-// 架构：3 基础设施组 + 9 业务策略组 + 9 rule-providers + 全加密 DNS
+// 版本：v3.0 (2026-05-21)
+// 架构：3 基础设施组 + 13 业务策略组 + 9 rule-providers + 全加密 DNS
 // 适用：FlClash >= v0.8.85；任何机场订阅
 //
 // === 导入方法（FlClash，两步操作） ===
@@ -13,7 +13,7 @@
 //
 // ================================================================
 
-const VERSION = 'v2.4'
+const VERSION = 'v3.0'
 
 // FlClash JS 引擎环境兼容
 var log = (typeof console !== 'undefined' && console.log) ? console.log.bind(console) : function() {}
@@ -174,14 +174,18 @@ function buildProxyGroups(config, c) {
   // 业务策略组 — 节点选择排最前，后面跟全部节点
   var bizGroup = ['节点选择', '自动选择', '故障转移'].concat(allNodes).concat(['DIRECT'])
 
-  upsertGroup(config, { name: 'AI 服务',   type: 'select', icon: ICON + 'Bot.png',          proxies: bizGroup.slice() })
-  upsertGroup(config, { name: 'YouTube',   type: 'select', icon: ICON + 'YouTube.png',      proxies: bizGroup.slice() })
-  upsertGroup(config, { name: 'Telegram',  type: 'select', icon: ICON + 'Telegram.png',     proxies: bizGroup.slice() })
-  upsertGroup(config, { name: '流媒体',    type: 'select', icon: ICON + 'ForeignMedia.png', proxies: bizGroup.slice() })
+  upsertGroup(config, { name: 'AI',       type: 'select', icon: ICON + 'Bot.png',           proxies: bizGroup.slice() })
+  upsertGroup(config, { name: 'YouTube',  type: 'select', icon: ICON + 'YouTube.png',       proxies: bizGroup.slice() })
+  upsertGroup(config, { name: 'Telegram', type: 'select', icon: ICON + 'Telegram.png',      proxies: bizGroup.slice() })
+  upsertGroup(config, { name: '海外社交', type: 'select', icon: ICON + 'Discord.png',       proxies: bizGroup.slice() })
+  upsertGroup(config, { name: '流媒体',   type: 'select', icon: ICON + 'ForeignMedia.png',  proxies: bizGroup.slice() })
+  upsertGroup(config, { name: 'Google',   type: 'select', icon: ICON + 'Google.png',        proxies: bizGroup.slice() })
+  upsertGroup(config, { name: '开发工具', type: 'select', icon: ICON + 'GitHub.png',        proxies: bizGroup.slice() })
+  upsertGroup(config, { name: '海外游戏', type: 'select', icon: ICON + 'Steam.png',         proxies: bizGroup.slice() })
 
   var appleGroup = ['DIRECT', '节点选择', '自动选择', '故障转移'].concat(allNodes)
-  upsertGroup(config, { name: '苹果服务', type: 'select', icon: ICON + 'Apple.png',     proxies: appleGroup.slice() })
-  upsertGroup(config, { name: '微软服务', type: 'select', icon: ICON + 'Microsoft.png', proxies: appleGroup.slice() })
+  upsertGroup(config, { name: '苹果',     type: 'select', icon: ICON + 'Apple.png',         proxies: appleGroup.slice() })
+  upsertGroup(config, { name: '微软',     type: 'select', icon: ICON + 'Microsoft.png',     proxies: appleGroup.slice() })
 
   upsertGroup(config, { name: '国内直连', type: 'select', icon: ICON + 'Direct.png',  proxies: ['DIRECT'] })
   upsertGroup(config, { name: '广告拦截', type: 'select', icon: ICON + 'AdBlack.png', proxies: ['REJECT', 'DIRECT'] })
@@ -222,7 +226,7 @@ function injectRuleProviders(config) {
 
   RP['openai'] = { type: 'http', behavior: 'domain', format: 'mrs',
     url: CDN_BASE + '/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/openai.mrs',
-    path: './ruleset/meta-openai.mrs', interval: 85530, proxy: 'AI 服务' }
+    path: './ruleset/meta-openai.mrs', interval: 85530, proxy: 'AI' }
 
   RP['tiktok'] = { type: 'http', behavior: 'domain', format: 'mrs',
     url: CDN_BASE + '/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/tiktok.mrs',
@@ -234,11 +238,11 @@ function injectRuleProviders(config) {
 
   RP['microsoft'] = { type: 'http', behavior: 'domain', format: 'mrs',
     url: CDN_BASE + '/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/microsoft.mrs',
-    path: './ruleset/meta-microsoft.mrs', interval: 85650, proxy: '微软服务' }
+    path: './ruleset/meta-microsoft.mrs', interval: 85650, proxy: '微软' }
 
   RP['apple'] = { type: 'http', behavior: 'domain', format: 'mrs',
     url: CDN_BASE + '/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/apple.mrs',
-    path: './ruleset/meta-apple.mrs', interval: 85665, proxy: '苹果服务' }
+    path: './ruleset/meta-apple.mrs', interval: 85665, proxy: '苹果' }
 
   RP['proxy_sites'] = { type: 'http', behavior: 'domain', format: 'mrs',
     url: CDN_BASE + '/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/geolocation-!cn.mrs',
@@ -287,21 +291,21 @@ function injectRules(config) {
   R.push('DOMAIN-SUFFIX,staticfile.org,DIRECT')
   R.push('DOMAIN-SUFFIX,upaiyun.com,DIRECT')
   // Android 系统服务（被墙，走代理；广告规则可能误伤需前置放行）
-  R.push('DOMAIN-SUFFIX,mtalk.google.com,节点选择')
-  R.push('DOMAIN,clientservices.googleapis.com,节点选择')
-  R.push('DOMAIN,update.googleapis.com,节点选择')
-  R.push('DOMAIN-SUFFIX,dl.google.com,节点选择')
-  R.push('DOMAIN-SUFFIX,dl.l.google.com,节点选择')
+  R.push('DOMAIN-SUFFIX,mtalk.google.com,Google')
+  R.push('DOMAIN,clientservices.googleapis.com,Google')
+  R.push('DOMAIN,update.googleapis.com,Google')
+  R.push('DOMAIN-SUFFIX,dl.google.com,Google')
+  R.push('DOMAIN-SUFFIX,dl.l.google.com,Google')
 
   // 广告拦截
   R.push('GEOSITE,category-ads-all,广告拦截')
   R.push('RULE-SET,anti-ad,广告拦截')
 
   // QUIC 阻断（微软/苹果/YouTube/Google 豁免，其余非中国站点 REJECT）
-  R.push('AND,((DST-PORT,443),(NETWORK,UDP),(RULE-SET,microsoft)),微软服务')
-  R.push('AND,((DST-PORT,443),(NETWORK,UDP),(RULE-SET,apple)),苹果服务')
+  R.push('AND,((DST-PORT,443),(NETWORK,UDP),(RULE-SET,microsoft)),微软')
+  R.push('AND,((DST-PORT,443),(NETWORK,UDP),(RULE-SET,apple)),苹果')
   R.push('AND,((DST-PORT,443),(NETWORK,UDP),(GEOSITE,youtube)),YouTube')
-  R.push('AND,((DST-PORT,443),(NETWORK,UDP),(GEOSITE,google)),节点选择')
+  R.push('AND,((DST-PORT,443),(NETWORK,UDP),(GEOSITE,google)),Google')
   R.push('AND,((DST-PORT,443),(NETWORK,UDP),(NOT,((RULE-SET,cn_sites)))),REJECT')
 
   // 局域网 / 私有网络
@@ -331,8 +335,8 @@ function injectRules(config) {
   // YouTube
   R.push('GEOSITE,youtube,YouTube')
 
-  // AI 服务
-  R.push('RULE-SET,openai,AI 服务')
+  // AI
+  R.push('RULE-SET,openai,AI')
   var aiDomains = [
     'chatgpt.com', 'oaistatic.com', 'oaiusercontent.com', 'sora.com',
     'claude.ai', 'anthropic.com',
@@ -344,12 +348,12 @@ function injectRules(config) {
     'x.ai', 'grok.com', 'copilot.microsoft.com'
   ]
   for (var j = 0; j < aiDomains.length; j++) {
-    R.push('DOMAIN-SUFFIX,' + aiDomains[j] + ',AI 服务')
+    R.push('DOMAIN-SUFFIX,' + aiDomains[j] + ',AI')
   }
 
   // Google 服务（放在 AI 之后，避免遮蔽特定 API 子域名）
-  R.push('DOMAIN-SUFFIX,gstatic.com,节点选择')
-  R.push('DOMAIN-SUFFIX,googleapis.com,节点选择')
+  R.push('DOMAIN-SUFFIX,gstatic.com,Google')
+  R.push('DOMAIN-SUFFIX,googleapis.com,Google')
 
   // DeepSeek 国内直连
   R.push('DOMAIN-SUFFIX,deepseek.com,国内直连')
@@ -358,21 +362,21 @@ function injectRules(config) {
   R.push('GEOSITE,telegram,Telegram')
 
   // 海外社交
-  R.push('GEOSITE,twitter,节点选择')
-  R.push('GEOSITE,reddit,节点选择')
-  R.push('GEOSITE,facebook,节点选择')
-  R.push('GEOSITE,instagram,节点选择')
-  R.push('GEOSITE,linkedin,节点选择')
-  R.push('DOMAIN-SUFFIX,snapchat.com,节点选择')  // snapchat 无 GEOSITE 分类
-  R.push('GEOSITE,pinterest,节点选择')
-  R.push('GEOSITE,threads,节点选择')
-  R.push('GEOSITE,bluesky,节点选择')
-  R.push('GEOSITE,quora,节点选择')
-  R.push('GEOSITE,medium,节点选择')
-  R.push('GEOSITE,imgur,节点选择')
-  R.push('GEOSITE,flickr,节点选择')
-  R.push('GEOSITE,tumblr,节点选择')
-  R.push('GEOSITE,pixiv,节点选择')
+  R.push('GEOSITE,twitter,海外社交')
+  R.push('GEOSITE,reddit,海外社交')
+  R.push('GEOSITE,facebook,海外社交')
+  R.push('GEOSITE,instagram,海外社交')
+  R.push('GEOSITE,linkedin,海外社交')
+  R.push('DOMAIN-SUFFIX,snapchat.com,海外社交')  // snapchat 无 GEOSITE 分类
+  R.push('GEOSITE,pinterest,海外社交')
+  R.push('GEOSITE,threads,海外社交')
+  R.push('GEOSITE,bluesky,海外社交')
+  R.push('GEOSITE,quora,海外社交')
+  R.push('GEOSITE,medium,海外社交')
+  R.push('GEOSITE,imgur,海外社交')
+  R.push('GEOSITE,flickr,海外社交')
+  R.push('GEOSITE,tumblr,海外社交')
+  R.push('GEOSITE,pixiv,海外社交')
 
   // 字节海外专属
   // 注：volces.com 的 apmplus / mssdk 子域名已在 anti-ad 前单独处理（DIRECT），
@@ -406,10 +410,10 @@ function injectRules(config) {
   // category-games-cn 含 mihoyo-cn / tencent-games / kurogames / bilibili-game 等
   // category-games-!cn 含 Steam / Epic / Blizzard / Nintendo / PlayStation / Xbox 等
   R.push('GEOSITE,category-games-cn,DIRECT')
-  R.push('GEOSITE,category-games-!cn,节点选择')
+  R.push('GEOSITE,category-games-!cn,海外游戏')
 
   // 开发工具
-  R.push('RULE-SET,github,节点选择')
+  R.push('RULE-SET,github,开发工具')
   var devDomains = [
     'ghcr.io', 'github.io',
     'docker.io', 'docker.com',
@@ -427,32 +431,32 @@ function injectRules(config) {
     'atlassian.com', 'hashicorp.com', 'terraform.io'
   ]
   for (var d = 0; d < devDomains.length; d++) {
-    R.push('DOMAIN-SUFFIX,' + devDomains[d] + ',节点选择')
+    R.push('DOMAIN-SUFFIX,' + devDomains[d] + ',开发工具')
   }
   // Fedora 镜像直连（Metalink 根据来源 IP 自动分配国内镜像）
   R.push('DOMAIN-SUFFIX,fedoraproject.org,DIRECT')
   // AlmaLinux 镜像列表被 GFW 阻断，走代理
-  R.push('DOMAIN-SUFFIX,almalinux.org,节点选择')
+  R.push('DOMAIN-SUFFIX,almalinux.org,开发工具')
   // Fermilab 镜像（AlmaLinux 默认仓库，美国服务器）
-  R.push('DOMAIN-SUFFIX,linux-mirrors.fnal.gov,节点选择')
-  R.push('GEOSITE,category-dev,节点选择')
+  R.push('DOMAIN-SUFFIX,linux-mirrors.fnal.gov,开发工具')
+  R.push('GEOSITE,category-dev,开发工具')
 
-  // 苹果服务
+  // 苹果
   R.push('DOMAIN-SUFFIX,icloud.com,DIRECT')
-  R.push('RULE-SET,apple,苹果服务')
-  R.push('DOMAIN-SUFFIX,apple.com.cn,苹果服务')
-  R.push('DOMAIN-SUFFIX,icloud.com.cn,苹果服务')
-  R.push('DOMAIN-SUFFIX,mzstatic.com,苹果服务')
+  R.push('RULE-SET,apple,苹果')
+  R.push('DOMAIN-SUFFIX,apple.com.cn,苹果')
+  R.push('DOMAIN-SUFFIX,icloud.com.cn,苹果')
+  R.push('DOMAIN-SUFFIX,mzstatic.com,苹果')
 
-  // 微软服务
+  // 微软
   R.push('DOMAIN-SUFFIX,storeedge.microsoft.com,DIRECT')
   R.push('DOMAIN-SUFFIX,mp.microsoft.com,DIRECT')
-  R.push('RULE-SET,microsoft,微软服务')
-  R.push('DOMAIN-SUFFIX,microsoft.cn,微软服务')
-  R.push('DOMAIN-SUFFIX,msftconnecttest.com,微软服务')
-  R.push('DOMAIN-SUFFIX,msn.com,微软服务')
-  R.push('DOMAIN-SUFFIX,live.com,微软服务')
-  R.push('DOMAIN-SUFFIX,sfx.ms,微软服务')
+  R.push('RULE-SET,microsoft,微软')
+  R.push('DOMAIN-SUFFIX,microsoft.cn,微软')
+  R.push('DOMAIN-SUFFIX,msftconnecttest.com,微软')
+  R.push('DOMAIN-SUFFIX,msn.com,微软')
+  R.push('DOMAIN-SUFFIX,live.com,微软')
+  R.push('DOMAIN-SUFFIX,sfx.ms,微软')
 
   // 国内直连
   var cnDomains = [
@@ -474,8 +478,8 @@ function injectRules(config) {
   }
 
   // Google .cn 防误伤
-  R.push('DOMAIN-SUFFIX,services.googleapis.cn,节点选择')
-  R.push('DOMAIN-SUFFIX,googleapis.cn,节点选择')
+  R.push('DOMAIN-SUFFIX,services.googleapis.cn,Google')
+  R.push('DOMAIN-SUFFIX,googleapis.cn,Google')
 
   // 基础分流
   R.push('RULE-SET,gfw,节点选择')

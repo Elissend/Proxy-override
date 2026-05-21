@@ -1,6 +1,6 @@
 # FlClash / Mihomo 通用覆写配置
-# 版本：v2.4 (2026-05-21)
-# 架构：3 基础设施组 + 9 业务策略组 + 9 rule-providers + 全加密 DNS
+# 版本：v3.0 (2026-05-21)
+# 架构：3 基础设施组 + 13 业务策略组 + 9 rule-providers + 全加密 DNS
 # 适用：Mihomo / Clash.Meta 内核；任何机场订阅
 # 对应 JS 覆写脚本：proxy-override.js
 #
@@ -223,9 +223,9 @@ proxy-groups:
     use:
       - sub
 
-  # --- 业务策略组（9 个）---
+  # --- 业务策略组（13 个）---
 
-  - name: AI 服务
+  - name: AI
     type: select
     icon: "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Bot.png"
     use:
@@ -258,6 +258,17 @@ proxy-groups:
       - 故障转移
       - DIRECT
 
+  - name: 海外社交
+    type: select
+    icon: "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Discord.png"
+    use:
+      - sub
+    proxies:
+      - 节点选择
+      - 自动选择
+      - 故障转移
+      - DIRECT
+
   - name: 流媒体
     type: select
     icon: "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/ForeignMedia.png"
@@ -269,7 +280,40 @@ proxy-groups:
       - 故障转移
       - DIRECT
 
-  - name: 苹果服务
+  - name: Google
+    type: select
+    icon: "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Google.png"
+    use:
+      - sub
+    proxies:
+      - 节点选择
+      - 自动选择
+      - 故障转移
+      - DIRECT
+
+  - name: 开发工具
+    type: select
+    icon: "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/GitHub.png"
+    use:
+      - sub
+    proxies:
+      - 节点选择
+      - 自动选择
+      - 故障转移
+      - DIRECT
+
+  - name: 海外游戏
+    type: select
+    icon: "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Steam.png"
+    use:
+      - sub
+    proxies:
+      - 节点选择
+      - 自动选择
+      - 故障转移
+      - DIRECT
+
+  - name: 苹果
     type: select
     icon: "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Apple.png"
     use:
@@ -280,7 +324,7 @@ proxy-groups:
       - 自动选择
       - 故障转移
 
-  - name: 微软服务
+  - name: 微软
     type: select
     icon: "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Microsoft.png"
     use:
@@ -341,7 +385,7 @@ rule-providers:
     url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/openai.mrs
     path: ./ruleset/meta-openai.mrs
     interval: 85530
-    proxy: AI 服务
+    proxy: AI
 
   tiktok:
     type: http
@@ -368,7 +412,7 @@ rule-providers:
     url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/microsoft.mrs
     path: ./ruleset/meta-microsoft.mrs
     interval: 85650
-    proxy: 微软服务
+    proxy: 微软
 
   apple:
     type: http
@@ -377,7 +421,7 @@ rule-providers:
     url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/apple.mrs
     path: ./ruleset/meta-apple.mrs
     interval: 85665
-    proxy: 苹果服务
+    proxy: 苹果
 
   proxy_sites:
     type: http
@@ -436,21 +480,21 @@ rules:
   - DOMAIN-SUFFIX,staticfile.org,DIRECT
   - DOMAIN-SUFFIX,upaiyun.com,DIRECT
   # Android 系统服务（被墙，走代理；广告规则可能误伤需前置放行）
-  - DOMAIN-SUFFIX,mtalk.google.com,节点选择
-  - DOMAIN,clientservices.googleapis.com,节点选择
-  - DOMAIN,update.googleapis.com,节点选择
-  - DOMAIN-SUFFIX,dl.google.com,节点选择
-  - DOMAIN-SUFFIX,dl.l.google.com,节点选择
+  - DOMAIN-SUFFIX,mtalk.google.com,Google
+  - DOMAIN,clientservices.googleapis.com,Google
+  - DOMAIN,update.googleapis.com,Google
+  - DOMAIN-SUFFIX,dl.google.com,Google
+  - DOMAIN-SUFFIX,dl.l.google.com,Google
 
   # --- 广告拦截 ---
   - GEOSITE,category-ads-all,广告拦截
   - RULE-SET,anti-ad,广告拦截
 
   # --- QUIC 阻断（微软/苹果/YouTube/Google 豁免，其余非中国站点 REJECT）---
-  - AND,((DST-PORT,443),(NETWORK,UDP),(RULE-SET,microsoft)),微软服务
-  - AND,((DST-PORT,443),(NETWORK,UDP),(RULE-SET,apple)),苹果服务
+  - AND,((DST-PORT,443),(NETWORK,UDP),(RULE-SET,microsoft)),微软
+  - AND,((DST-PORT,443),(NETWORK,UDP),(RULE-SET,apple)),苹果
   - AND,((DST-PORT,443),(NETWORK,UDP),(GEOSITE,youtube)),YouTube
-  - AND,((DST-PORT,443),(NETWORK,UDP),(GEOSITE,google)),节点选择
+  - AND,((DST-PORT,443),(NETWORK,UDP),(GEOSITE,google)),Google
   - AND,((DST-PORT,443),(NETWORK,UDP),(NOT,((RULE-SET,cn_sites)))),REJECT
 
   # --- 局域网 / 私有网络 ---
@@ -487,38 +531,38 @@ rules:
   # --- YouTube ---
   - GEOSITE,youtube,YouTube
 
-  # --- AI 服务 ---
-  - RULE-SET,openai,AI 服务
-  - DOMAIN-SUFFIX,chatgpt.com,AI 服务
-  - DOMAIN-SUFFIX,oaistatic.com,AI 服务
-  - DOMAIN-SUFFIX,oaiusercontent.com,AI 服务
-  - DOMAIN-SUFFIX,sora.com,AI 服务
-  - DOMAIN-SUFFIX,claude.ai,AI 服务
-  - DOMAIN-SUFFIX,anthropic.com,AI 服务
-  - DOMAIN-SUFFIX,ai.google.dev,AI 服务
-  - DOMAIN-SUFFIX,generativelanguage.googleapis.com,AI 服务
-  - DOMAIN-SUFFIX,mistral.ai,AI 服务
-  - DOMAIN-SUFFIX,perplexity.ai,AI 服务
-  - DOMAIN-SUFFIX,cohere.ai,AI 服务
-  - DOMAIN-SUFFIX,cohere.com,AI 服务
-  - DOMAIN-SUFFIX,midjourney.com,AI 服务
-  - DOMAIN-SUFFIX,stability.ai,AI 服务
-  - DOMAIN-SUFFIX,cursor.com,AI 服务
-  - DOMAIN-SUFFIX,cursor.sh,AI 服务
-  - DOMAIN-SUFFIX,huggingface.co,AI 服务
-  - DOMAIN-SUFFIX,replicate.com,AI 服务
-  - DOMAIN-SUFFIX,together.ai,AI 服务
-  - DOMAIN-SUFFIX,suno.ai,AI 服务
-  - DOMAIN-SUFFIX,suno.com,AI 服务
-  - DOMAIN-SUFFIX,openrouter.ai,AI 服务
-  - DOMAIN-SUFFIX,runpod.io,AI 服务
-  - DOMAIN-SUFFIX,x.ai,AI 服务
-  - DOMAIN-SUFFIX,grok.com,AI 服务
-  - DOMAIN-SUFFIX,copilot.microsoft.com,AI 服务
+  # --- AI ---
+  - RULE-SET,openai,AI
+  - DOMAIN-SUFFIX,chatgpt.com,AI
+  - DOMAIN-SUFFIX,oaistatic.com,AI
+  - DOMAIN-SUFFIX,oaiusercontent.com,AI
+  - DOMAIN-SUFFIX,sora.com,AI
+  - DOMAIN-SUFFIX,claude.ai,AI
+  - DOMAIN-SUFFIX,anthropic.com,AI
+  - DOMAIN-SUFFIX,ai.google.dev,AI
+  - DOMAIN-SUFFIX,generativelanguage.googleapis.com,AI
+  - DOMAIN-SUFFIX,mistral.ai,AI
+  - DOMAIN-SUFFIX,perplexity.ai,AI
+  - DOMAIN-SUFFIX,cohere.ai,AI
+  - DOMAIN-SUFFIX,cohere.com,AI
+  - DOMAIN-SUFFIX,midjourney.com,AI
+  - DOMAIN-SUFFIX,stability.ai,AI
+  - DOMAIN-SUFFIX,cursor.com,AI
+  - DOMAIN-SUFFIX,cursor.sh,AI
+  - DOMAIN-SUFFIX,huggingface.co,AI
+  - DOMAIN-SUFFIX,replicate.com,AI
+  - DOMAIN-SUFFIX,together.ai,AI
+  - DOMAIN-SUFFIX,suno.ai,AI
+  - DOMAIN-SUFFIX,suno.com,AI
+  - DOMAIN-SUFFIX,openrouter.ai,AI
+  - DOMAIN-SUFFIX,runpod.io,AI
+  - DOMAIN-SUFFIX,x.ai,AI
+  - DOMAIN-SUFFIX,grok.com,AI
+  - DOMAIN-SUFFIX,copilot.microsoft.com,AI
 
   # --- Google 基础服务（在 AI 之后，避免遮蔽特定 API 子域名）---
-  - DOMAIN-SUFFIX,gstatic.com,节点选择
-  - DOMAIN-SUFFIX,googleapis.com,节点选择
+  - DOMAIN-SUFFIX,gstatic.com,Google
+  - DOMAIN-SUFFIX,googleapis.com,Google
 
   # --- DeepSeek（国内直连）---
   - DOMAIN-SUFFIX,deepseek.com,国内直连
@@ -527,21 +571,21 @@ rules:
   - GEOSITE,telegram,Telegram
 
   # --- 海外社交 ---
-  - GEOSITE,twitter,节点选择
-  - GEOSITE,reddit,节点选择
-  - GEOSITE,facebook,节点选择
-  - GEOSITE,instagram,节点选择
-  - GEOSITE,linkedin,节点选择
-  - DOMAIN-SUFFIX,snapchat.com,节点选择  # snapchat 无 GEOSITE 分类
-  - GEOSITE,pinterest,节点选择
-  - GEOSITE,threads,节点选择
-  - GEOSITE,bluesky,节点选择
-  - GEOSITE,quora,节点选择
-  - GEOSITE,medium,节点选择
-  - GEOSITE,imgur,节点选择
-  - GEOSITE,flickr,节点选择
-  - GEOSITE,tumblr,节点选择
-  - GEOSITE,pixiv,节点选择
+  - GEOSITE,twitter,海外社交
+  - GEOSITE,reddit,海外社交
+  - GEOSITE,facebook,海外社交
+  - GEOSITE,instagram,海外社交
+  - GEOSITE,linkedin,海外社交
+  - DOMAIN-SUFFIX,snapchat.com,海外社交  # snapchat 无 GEOSITE 分类
+  - GEOSITE,pinterest,海外社交
+  - GEOSITE,threads,海外社交
+  - GEOSITE,bluesky,海外社交
+  - GEOSITE,quora,海外社交
+  - GEOSITE,medium,海外社交
+  - GEOSITE,imgur,海外社交
+  - GEOSITE,flickr,海外社交
+  - GEOSITE,tumblr,海外社交
+  - GEOSITE,pixiv,海外社交
 
   # --- 字节海外专属 ---
   - DOMAIN-SUFFIX,byteoversea.com,节点选择
@@ -575,73 +619,73 @@ rules:
   # category-games-cn 含 mihoyo-cn / tencent-games / kurogames / bilibili-game 等
   # category-games-!cn 含 Steam / Epic / Blizzard / Nintendo / PlayStation / Xbox 等
   - GEOSITE,category-games-cn,DIRECT
-  - GEOSITE,category-games-!cn,节点选择
+  - GEOSITE,category-games-!cn,海外游戏
 
   # --- 开发工具 ---
-  - RULE-SET,github,节点选择
-  - DOMAIN-SUFFIX,ghcr.io,节点选择
-  - DOMAIN-SUFFIX,github.io,节点选择
-  - DOMAIN-SUFFIX,docker.io,节点选择
-  - DOMAIN-SUFFIX,docker.com,节点选择
-  - DOMAIN-SUFFIX,repo.maven.apache.org,节点选择
-  - DOMAIN-SUFFIX,maven.apache.org,节点选择
-  - DOMAIN-SUFFIX,jetbrains.com,节点选择
-  - DOMAIN-SUFFIX,jetbrains.space,节点选择
-  - DOMAIN-SUFFIX,jetbrains.net,节点选择
-  - DOMAIN-SUFFIX,npmjs.org,节点选择
-  - DOMAIN-SUFFIX,npmjs.com,节点选择
-  - DOMAIN-SUFFIX,yarnpkg.com,节点选择
-  - DOMAIN-SUFFIX,pypi.org,节点选择
-  - DOMAIN-SUFFIX,pythonhosted.org,节点选择
-  - DOMAIN-SUFFIX,crates.io,节点选择
-  - DOMAIN-SUFFIX,rubygems.org,节点选择
-  - DOMAIN-SUFFIX,nuget.org,节点选择
-  - DOMAIN-SUFFIX,packagist.org,节点选择
-  - DOMAIN-SUFFIX,stackoverflow.com,节点选择
-  - DOMAIN-SUFFIX,stackexchange.com,节点选择
-  - DOMAIN-SUFFIX,vercel.com,节点选择
-  - DOMAIN-SUFFIX,vercel.app,节点选择
-  - DOMAIN-SUFFIX,netlify.com,节点选择
-  - DOMAIN-SUFFIX,netlify.app,节点选择
-  - DOMAIN-SUFFIX,pages.dev,节点选择
-  - DOMAIN-SUFFIX,workers.dev,节点选择
-  - DOMAIN-SUFFIX,gitlab.com,节点选择
-  - DOMAIN-SUFFIX,bitbucket.org,节点选择
-  - DOMAIN-SUFFIX,digitalocean.com,节点选择
-  - DOMAIN-SUFFIX,vultr.com,节点选择
-  - DOMAIN-SUFFIX,heroku.com,节点选择
-  - DOMAIN-SUFFIX,fly.io,节点选择
-  - DOMAIN-SUFFIX,render.com,节点选择
-  - DOMAIN-SUFFIX,sentry.io,节点选择
-  - DOMAIN-SUFFIX,postman.com,节点选择
-  - DOMAIN-SUFFIX,notion.so,节点选择
-  - DOMAIN-SUFFIX,figma.com,节点选择
-  - DOMAIN-SUFFIX,atlassian.com,节点选择
-  - DOMAIN-SUFFIX,hashicorp.com,节点选择
-  - DOMAIN-SUFFIX,terraform.io,节点选择
+  - RULE-SET,github,开发工具
+  - DOMAIN-SUFFIX,ghcr.io,开发工具
+  - DOMAIN-SUFFIX,github.io,开发工具
+  - DOMAIN-SUFFIX,docker.io,开发工具
+  - DOMAIN-SUFFIX,docker.com,开发工具
+  - DOMAIN-SUFFIX,repo.maven.apache.org,开发工具
+  - DOMAIN-SUFFIX,maven.apache.org,开发工具
+  - DOMAIN-SUFFIX,jetbrains.com,开发工具
+  - DOMAIN-SUFFIX,jetbrains.space,开发工具
+  - DOMAIN-SUFFIX,jetbrains.net,开发工具
+  - DOMAIN-SUFFIX,npmjs.org,开发工具
+  - DOMAIN-SUFFIX,npmjs.com,开发工具
+  - DOMAIN-SUFFIX,yarnpkg.com,开发工具
+  - DOMAIN-SUFFIX,pypi.org,开发工具
+  - DOMAIN-SUFFIX,pythonhosted.org,开发工具
+  - DOMAIN-SUFFIX,crates.io,开发工具
+  - DOMAIN-SUFFIX,rubygems.org,开发工具
+  - DOMAIN-SUFFIX,nuget.org,开发工具
+  - DOMAIN-SUFFIX,packagist.org,开发工具
+  - DOMAIN-SUFFIX,stackoverflow.com,开发工具
+  - DOMAIN-SUFFIX,stackexchange.com,开发工具
+  - DOMAIN-SUFFIX,vercel.com,开发工具
+  - DOMAIN-SUFFIX,vercel.app,开发工具
+  - DOMAIN-SUFFIX,netlify.com,开发工具
+  - DOMAIN-SUFFIX,netlify.app,开发工具
+  - DOMAIN-SUFFIX,pages.dev,开发工具
+  - DOMAIN-SUFFIX,workers.dev,开发工具
+  - DOMAIN-SUFFIX,gitlab.com,开发工具
+  - DOMAIN-SUFFIX,bitbucket.org,开发工具
+  - DOMAIN-SUFFIX,digitalocean.com,开发工具
+  - DOMAIN-SUFFIX,vultr.com,开发工具
+  - DOMAIN-SUFFIX,heroku.com,开发工具
+  - DOMAIN-SUFFIX,fly.io,开发工具
+  - DOMAIN-SUFFIX,render.com,开发工具
+  - DOMAIN-SUFFIX,sentry.io,开发工具
+  - DOMAIN-SUFFIX,postman.com,开发工具
+  - DOMAIN-SUFFIX,notion.so,开发工具
+  - DOMAIN-SUFFIX,figma.com,开发工具
+  - DOMAIN-SUFFIX,atlassian.com,开发工具
+  - DOMAIN-SUFFIX,hashicorp.com,开发工具
+  - DOMAIN-SUFFIX,terraform.io,开发工具
   # --- Fedora 镜像直连（Metalink 根据来源 IP 自动分配国内镜像）---
   - DOMAIN-SUFFIX,fedoraproject.org,DIRECT
   # AlmaLinux 镜像列表被 GFW 阻断，走代理
-  - DOMAIN-SUFFIX,almalinux.org,节点选择
-  - DOMAIN-SUFFIX,linux-mirrors.fnal.gov,节点选择
-  - GEOSITE,category-dev,节点选择
+  - DOMAIN-SUFFIX,almalinux.org,开发工具
+  - DOMAIN-SUFFIX,linux-mirrors.fnal.gov,开发工具
+  - GEOSITE,category-dev,开发工具
 
-  # --- 苹果服务 ---
+  # --- 苹果 ---
   - DOMAIN-SUFFIX,icloud.com,DIRECT
-  - RULE-SET,apple,苹果服务
-  - DOMAIN-SUFFIX,apple.com.cn,苹果服务
-  - DOMAIN-SUFFIX,icloud.com.cn,苹果服务
-  - DOMAIN-SUFFIX,mzstatic.com,苹果服务
+  - RULE-SET,apple,苹果
+  - DOMAIN-SUFFIX,apple.com.cn,苹果
+  - DOMAIN-SUFFIX,icloud.com.cn,苹果
+  - DOMAIN-SUFFIX,mzstatic.com,苹果
 
-  # --- 微软服务 ---
+  # --- 微软 ---
   - DOMAIN-SUFFIX,storeedge.microsoft.com,DIRECT
   - DOMAIN-SUFFIX,mp.microsoft.com,DIRECT
-  - RULE-SET,microsoft,微软服务
-  - DOMAIN-SUFFIX,microsoft.cn,微软服务
-  - DOMAIN-SUFFIX,msftconnecttest.com,微软服务
-  - DOMAIN-SUFFIX,msn.com,微软服务
-  - DOMAIN-SUFFIX,live.com,微软服务
-  - DOMAIN-SUFFIX,sfx.ms,微软服务
+  - RULE-SET,microsoft,微软
+  - DOMAIN-SUFFIX,microsoft.cn,微软
+  - DOMAIN-SUFFIX,msftconnecttest.com,微软
+  - DOMAIN-SUFFIX,msn.com,微软
+  - DOMAIN-SUFFIX,live.com,微软
+  - DOMAIN-SUFFIX,sfx.ms,微软
 
   # --- 国内直连 ---
   - DOMAIN-SUFFIX,baidu.com,DIRECT
@@ -670,8 +714,8 @@ rules:
   - DST-PORT,26880,DIRECT
 
   # --- Google .cn 防误伤 ---
-  - DOMAIN-SUFFIX,services.googleapis.cn,节点选择
-  - DOMAIN-SUFFIX,googleapis.cn,节点选择
+  - DOMAIN-SUFFIX,services.googleapis.cn,Google
+  - DOMAIN-SUFFIX,googleapis.cn,Google
 
   # --- 基础分流 ---
   - RULE-SET,gfw,节点选择
