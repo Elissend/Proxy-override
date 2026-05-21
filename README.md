@@ -2,7 +2,7 @@
 
 适用于 FlClash / Mihomo / Egern 的全加密 DNS、12 策略组分流规则，导入即用，零手动配置。
 
-[![Version](https://img.shields.io/badge/version-v2.5-blue)](https://github.com/Sgraqwq/Proxy-override/releases)
+[![Version](https://img.shields.io/badge/version-v2.4-blue)](https://github.com/Sgraqwq/Proxy-override/releases)
 
 > **本脚本会不定期更新规则和修复问题，请定期检查并更新到最新版本。**
 
@@ -301,28 +301,12 @@ FLClash → 配置 → 点击订阅 → 日志 → 搜索目标域名 → 确认
 
 1. 确认覆写已关联到对应订阅
 2. 下拉刷新订阅
-3. 确认日志中有 `[v2.5]` 前缀的输出
+3. 确认日志中有 `[v2.4]` 前缀的输出
 4. 如果日志为空，检查 FLClash 版本是否 ≥ v0.8.85
 
 ### 部分节点未出现在策略组
 
-检查节点名称是否命中了 `isInfoNode` 的过滤正则。在 FLClash 日志中搜索 `[v2.5] Valid proxies` 查看过滤后数量。
-
-### WSL2 / 虚拟机下载大文件超时
-
-> **这是 TUN 虚拟网卡 MTU 不匹配导致的问题，不是规则配置问题。**
-
-**症状**：在 WSL2 或虚拟机中 `dnf` / `pip` / `apt` 等工具下载大文件时报 `Curl error (28): Timeout was reached`，小请求（curl 测试、ping）正常。
-
-**原因**：Windows 运行代理客户端 + WSL2/虚拟机通过 TUN 连入时，两层虚拟网卡叠加后有效 MTU 小于默认 1500。TCP 握手小包正常通过，但下载大文件时满载 TCP 分段被静默丢弃——发送方收不到 ACK，超时后断开。PMTUD（Path MTU Discovery）在 TUN 层通常无法传递 ICMP 消息，所以发送方永远感知不到需要降 MTU。
-
-**修复**：将 TUN 的 MTU 从默认 1500 降到 1300。
-
-- **JS 覆写版**：编辑脚本，搜索 `config.tun.mtu`，取消注释
-- **YAML 配置版**：编辑配置文件，搜索 `tun:` 段，取消注释并重启客户端
-- **FlClash 用户**：也可直接在 FlClash → 设置 → 覆写 → 全局扩展配置中添加 `tun: { mtu: 1300 }`
-
-重启代理客户端后即可正常下载。MTU 1300 对性能的影响可忽略不计（包头开销增加约 2-3%），且兼容性更好——多数 VPN 协议默认 MTU 就在 1300-1420 区间。
+检查节点名称是否命中了 `isInfoNode` 的过滤正则。在 FLClash 日志中搜索 `[v2.4] Valid proxies` 查看过滤后数量。
 
 ### 如何更新覆写脚本
 
