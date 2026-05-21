@@ -1,5 +1,5 @@
 // FlClash 覆写脚本
-// 版本：v2.4 (2026-05-21)
+// 版本：v2.5 (2026-05-21)
 // 架构：3 基础设施组 + 9 业务策略组 + 9 rule-providers + 全加密 DNS
 // 适用：FlClash >= v0.8.85；任何机场订阅
 //
@@ -13,7 +13,7 @@
 //
 // ================================================================
 
-const VERSION = 'v2.4'
+const VERSION = 'v2.5'
 
 // FlClash JS 引擎环境兼容
 var log = (typeof console !== 'undefined' && console.log) ? console.log.bind(console) : function() {}
@@ -104,6 +104,15 @@ function overwriteGeneral(config) {
     'respect-rules': true,
     'direct-nameserver-follow-policy': true
   }
+
+  // --- TUN 模式（可选，按需启用）---
+  // 如果你的代理客户端运行在 Windows，而 WSL2 / 虚拟机通过 TUN 虚拟网卡
+  // 连入，下载大文件（dnf、pip 等）可能超时。这是因为两层虚拟网卡叠加
+  // 后有效 MTU 小于默认 1500，大 TCP 分段被丢弃，但小包（TLS 握手、
+  // HTTP 头）正常。取消以下注释并将 MTU 设为合适的值（建议 1300）：
+  //
+  // if (!config.tun) config.tun = {}
+  // config.tun.mtu = 1300
 }
 
 // ================================================================
