@@ -416,6 +416,7 @@ rules:
   - DOMAIN-SUFFIX,wx.qlogo.cn,DIRECT
   - DOMAIN-SUFFIX,servicewechat.com,DIRECT
   - DOMAIN-SUFFIX,mp.weixin.qq.com,DIRECT
+  - DOMAIN,school-wx.qshnhealth.com,DIRECT
 
   # --- 火山引擎 APM / 极光推送（anti-ad 规则集误伤，米哈游等国服游戏基础设施）---
   - DOMAIN,apmplus.volces.com,DIRECT

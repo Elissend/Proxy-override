@@ -267,6 +267,7 @@ function injectRules(config) {
   R.push('DOMAIN-SUFFIX,wx.qlogo.cn,DIRECT')
   R.push('DOMAIN-SUFFIX,servicewechat.com,DIRECT')
   R.push('DOMAIN-SUFFIX,mp.weixin.qq.com,DIRECT')
+  R.push('DOMAIN,school-wx.qshnhealth.com,DIRECT')
 
   // 火山引擎 APM / 极光推送（anti-ad 规则集误伤，米哈游等国服游戏基础设施）
   R.push('DOMAIN,apmplus.volces.com,DIRECT')
