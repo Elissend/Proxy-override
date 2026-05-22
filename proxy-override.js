@@ -151,7 +151,7 @@ function buildProxyGroups(config, c) {
 
   upsertGroup(config, {
     name: '节点选择', type: 'select',
-    icon: ICON + 'Manual.png',
+    icon: ICON + 'Available.png',
     proxies: ['自动选择', '故障转移'].concat(allNodes).concat(['DIRECT'])
   })
 
@@ -191,7 +191,7 @@ function buildProxyGroups(config, c) {
   upsertGroup(config, { name: '广告拦截', type: 'select', icon: ICON + 'AdBlack.png', proxies: ['REJECT', 'DIRECT'] })
 
   var finalGroup = ['节点选择', '自动选择', '故障转移'].concat(allNodes).concat(['DIRECT', 'REJECT'])
-  upsertGroup(config, { name: '漏网之鱼', type: 'select', icon: ICON + 'Available.png', proxies: finalGroup.slice() })
+  upsertGroup(config, { name: '漏网之鱼', type: 'select', icon: ICON + 'Final.png', proxies: finalGroup.slice() })
 }
 
 // ================================================================

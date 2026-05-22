@@ -194,7 +194,7 @@ proxy-groups:
 
   - name: 节点选择
     type: select
-    icon: "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Manual.png"
+    icon: "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Available.png"
     use:
       - sub
     proxies:
@@ -350,7 +350,7 @@ proxy-groups:
 
   - name: 漏网之鱼
     type: select
-    icon: "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Available.png"
+    icon: "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Final.png"
     use:
       - sub
     proxies:
