@@ -465,7 +465,8 @@ function injectRules(config) {
     'qcloud.com', 'myqcloud.com',
     'feishu.cn', 'dingtalk.com',
     '163.com', '126.com', '126.net', 'chiphell.com',
-    'xindazhilian.com'
+    'xindazhilian.com',
+    'halo.run'
   ]
   for (var c = 0; c < cnDomains.length; c++) {
     R.push('DOMAIN-SUFFIX,' + cnDomains[c] + ',DIRECT')

@@ -704,6 +704,7 @@ rules:
   - DOMAIN-SUFFIX,126.net,DIRECT
   - DOMAIN-SUFFIX,chiphell.com,DIRECT
   - DOMAIN-SUFFIX,xindazhilian.com,DIRECT
+  - DOMAIN-SUFFIX,halo.run,DIRECT
 
   # --- 端口直连 ---
   - DST-PORT,123,DIRECT
