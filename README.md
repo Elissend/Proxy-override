@@ -1,6 +1,6 @@
 # ProxyOverride — 通用代理覆写配置
 
-适用于 FlClash / Mihomo / Egern 的全加密 DNS、16 策略组分流规则，导入即用，零手动配置。
+适用于 FlClash / Mihomo 的策略组分流规则。
 
 [![Version](https://img.shields.io/badge/version-v3.0-blue)](https://github.com/Sgraqwq/Proxy-override/releases)
 
@@ -9,8 +9,6 @@
 ## 目录
 
 - [快速开始](#快速开始)
-- [三种版本对比](#三种版本对比)
-- [架构设计](#架构设计)
 - [DNS 技术细节](#dns-技术细节)
 - [策略组](#策略组)
 - [规则覆盖](#规则覆盖)
@@ -78,51 +76,7 @@ proxy-providers:
 
 > YAML 版的 proxy-provider 无法像 JS 覆写版那样用正则过滤信息节点（Mihomo RE2 正则引擎不支持负向排除）。如果订阅含大量信息节点，建议使用 JS 覆写版。
 
-### Egern 配置版（iOS）
 
-适用于 [Egern](https://egernapp.com) iOS 代理客户端。规则集来源 [Centralmatrix3/Matrix-io](https://github.com/Centralmatrix3/Matrix-io) Egern 原生 YAML 格式。
-
-| 文件 | 用途 |
-|------|------|
-| `egern-profile.yaml` | 完整配置，含规则 + 策略组 + DNS + 个人节点 |
-| `egern-profile-native.yaml` | 纯净模板，无节点无凭证，可分享 |
-
-使用方法：Egern → 配置 → 导入 → 选择对应 yaml 文件。
-
-## 三种版本对比
-
-| 特性 | JS 覆写版 | YAML 配置版 | Egern 版 |
-|------|----------|------------|---------|
-| 文件 | `proxy-override.js` | `proxy-override.yaml` | `egern-profile.yaml` |
-| 适用客户端 | FLClash | 所有 Mihomo 客户端 | Egern (iOS) |
-| 节点来源 | 订阅 proxies 数组 | proxy-provider 拉取 | external 策略组 |
-| 信息节点过滤 | 支持正则 | 不支持 | filter 正则 |
-| 策略组动态构建 | 按实际节点数 | 固定 use 引用 | flatten 展开 |
-| 部署复杂度 | FLClash 两步骤 | 替换订阅链接 | 导入文件即可 |
-
-FLClash 用户推荐 JS 覆写版；其他 Mihomo 客户端使用 YAML 版；iOS 用户使用 Egern 版。
-
-## 架构设计
-
-```
-请求 → 规则引擎（顺序匹配，首次命中停止）
-         │
-         ├─ 广告拦截        → REJECT
-         ├─ QUIC UDP 阻断   → REJECT（微软/苹果/YouTube/Google 豁免）
-         ├─ 局域网/私有     → DIRECT
-         ├─ YouTube         → YouTube 策略组
-         ├─ AI              → AI 策略组
-         ├─ Telegram        → Telegram 策略组
-         ├─ 海外社交        → 海外社交策略组
-         ├─ 流媒体          → 流媒体策略组
-         ├─ Google          → Google 策略组
-         ├─ 开发工具        → 开发工具策略组
-         ├─ 海外游戏        → 海外游戏策略组
-         ├─ 游戏国服        → DIRECT
-         ├─ 苹果/微软       → 默认 DIRECT（可手动切换）
-         ├─ 国内域名/IP     → DIRECT
-         └─ 未匹配          → 漏网之鱼（MATCH）
-```
 
 ## DNS 技术细节
 
@@ -154,7 +108,7 @@ aistudio.google.com → 单独走国外 DoH（防止国内 DNS 污染）
 
 ## 策略组
 
-### 基础设施组（3 个）
+### 基础设施组
 
 | 组 | 类型 | 行为 |
 |----|------|------|
@@ -162,7 +116,7 @@ aistudio.google.com → 单独走国外 DoH（防止国内 DNS 污染）
 | 自动选择 | url-test | 300s 测速 gstatic.com/generate_204，延迟最低胜出，tolerance=150ms |
 | 故障转移 | fallback | 按序尝试，首个可用即为选中，300s 重检 |
 
-### 业务策略组（13 个）
+### 业务策略组
 
 | 组 | 默认策略 | 可用选项 |
 |----|----------|----------|
@@ -295,24 +249,9 @@ upsertGroup(config, {
 
 ## 常见问题
 
-### 谷歌商店下载等待中
-
-已内置修复：`services.googleapis.cn` / `googleapis.cn` 走节点选择。
-
 ### 某个服务走了错误的线路
 
 FLClash → 配置 → 点击订阅 → 日志 → 搜索目标域名 → 确认匹配的规则及顺序。
-
-### 覆写不生效
-
-1. 确认覆写已关联到对应订阅
-2. 下拉刷新订阅
-3. 确认日志中有 `[v3.0]` 前缀的输出
-4. 如果日志为空，检查 FLClash 版本是否 ≥ v0.8.85
-
-### 部分节点未出现在策略组
-
-检查节点名称是否命中了 `isInfoNode` 的过滤正则。在 FLClash 日志中搜索 `[v2.5] Valid proxies` 查看过滤后数量。
 
 ### 如何更新覆写脚本
 
