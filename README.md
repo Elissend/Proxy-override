@@ -2,7 +2,7 @@
 
 适用于 FlClash / Mihomo 的策略组分流规则。
 
-[![Version](https://img.shields.io/badge/version-v3.0-blue)](https://github.com/Sgraqwq/Proxy-override/releases)
+[![Version](https://img.shields.io/badge/version-v3.0-blue)](https://github.com/Elissend/Proxy-override/releases)
 
 > **本脚本会不定期更新规则和修复问题，请定期检查并更新到最新版本。**
 
