@@ -28,7 +28,7 @@ FLClash 用户推荐此版本——通过 JS 脚本动态过滤信息节点、�
 FLClash → 工具 → 进阶设置 → 脚本 → 右上角 + → 右上角菜单 → 外部获取 → 通过 URL 导入：
 
 ```
-https://raw.githubusercontent.com/Sgraqwq/Proxy-override/main/proxy-override.js
+https://raw.githubusercontent.com/Elissend/Proxy-override/main/proxy-override.js
 ```
 
 **第 2 步：关联到订阅**
