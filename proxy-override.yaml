@@ -1,5 +1,5 @@
 # FlClash / Mihomo 通用覆写配置
-# 版本：v3.0 (2026-05-21)
+# 版本：v3.2 (2026-07-23)
 # 架构：3 基础设施组 + 13 业务策略组 + 9 rule-providers + 全加密 DNS
 # 适用：Mihomo / Clash.Meta 内核；任何机场订阅
 # 对应 JS 覆写脚本：proxy-override.js
@@ -17,7 +17,6 @@
 
 unified-delay: true
 tcp-concurrent: true
-find-process-mode: strict
 keep-alive-idle: 30
 keep-alive-interval: 15
 
@@ -101,7 +100,6 @@ dns:
     - +.time.apple.com
     - +.time.google.com
     - +.time.nist.gov
-    - time.windows.com
     - ip.cip.cc
     - captive.apple.com
     - connectivitycheck.gstatic.com
@@ -503,25 +501,6 @@ rules:
   - GEOIP,private,DIRECT,no-resolve
   - DOMAIN,localhost,DIRECT
   - DOMAIN-SUFFIX,local,DIRECT
-
-  # --- 进程名直连（仅 Windows 平台 TUN 模式生效）---
-  - PROCESS-NAME,WinStore.App.exe,DIRECT
-  - PROCESS-NAME,WinStore.Mobile.exe,DIRECT
-  - PROCESS-NAME,Weixin.exe,DIRECT
-  - PROCESS-NAME,WeChat.exe,DIRECT
-  - PROCESS-NAME,WeChatAppEx.exe,DIRECT
-  - PROCESS-NAME,QQ.exe,DIRECT
-  - PROCESS-NAME,SunloginClient.exe,DIRECT
-  - PROCESS-NAME,ToDesk.exe,DIRECT
-  - PROCESS-NAME,ToDesk_Service.exe,DIRECT
-  - PROCESS-NAME,rustdesk.exe,DIRECT
-  - PROCESS-NAME,TeamViewer.exe,DIRECT
-  - PROCESS-NAME,AnyDesk.exe,DIRECT
-  - PROCESS-NAME,tailscale.exe,DIRECT
-  - PROCESS-NAME,tailscaled.exe,DIRECT
-  - PROCESS-NAME,frpc.exe,DIRECT
-  - PROCESS-NAME,Navicat.exe,DIRECT
-  - PROCESS-NAME,cloudflared.exe,DIRECT
 
   # --- 前置拦截（确保规则集和 DNS 下载可用）---
   - DOMAIN-SUFFIX,jsdelivr.net,节点选择

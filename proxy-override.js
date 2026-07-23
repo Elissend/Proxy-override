@@ -1,7 +1,6 @@
 // FlClash 覆写脚本
-// 版本：v3.0 (2026-05-21)
-// 架构：3 基础设施组 + 13 业务策略组 + 9 rule-providers + 全加密 DNS
-// 适用：FlClash >= v0.8.85；任何机场订阅
+// 版本：v3.2 (2026-07-23)
+// 适用：支持覆写脚本的 Mihomo 客户端；TUN 由客户端自行控制
 //
 // === 导入方法（FlClash，两步操作） ===
 //
@@ -13,7 +12,7 @@
 //
 // ================================================================
 
-const VERSION = 'v3.0'
+const VERSION = 'v3.2'
 
 // FlClash JS 引擎环境兼容
 var log = (typeof console !== 'undefined' && console.log) ? console.log.bind(console) : function() {}
@@ -31,7 +30,6 @@ const CDN_BASE = 'https://fastly.jsdelivr.net'
 function overwriteGeneral(config) {
   config['unified-delay'] = true
   config['tcp-concurrent'] = true
-  config['find-process-mode'] = 'strict'
   config['keep-alive-idle'] = 30
   config['keep-alive-interval'] = 15
 
@@ -82,7 +80,7 @@ function overwriteGeneral(config) {
       '+.oray.com', '+.sunlogin.com', '+.todesk.com', '+.rustdesk.com',
       '+.teamviewer.com', '+.anydesk.com', '+.tailscale.com', '+.zerotier.com', '+.nvidia.com',
       '+.ntp.org', '+.pool.ntp.org',
-      '+.time.apple.com', '+.time.google.com', '+.time.nist.gov', 'time.windows.com',
+      '+.time.apple.com', '+.time.google.com', '+.time.nist.gov',
       'ip.cip.cc',
       'captive.apple.com', 'connectivitycheck.gstatic.com', 'id6.me',
       'localhost.ptlogin2.qq.com',
@@ -314,18 +312,6 @@ function injectRules(config) {
   R.push('GEOIP,private,DIRECT,no-resolve')
   R.push('DOMAIN,localhost,DIRECT')
   R.push('DOMAIN-SUFFIX,local,DIRECT')
-
-  // 进程名直连（仅 Windows 平台生效；其他平台静默跳过，流量由后续规则接管）
-  var localProcesses = [
-    'WinStore.App.exe', 'WinStore.Mobile.exe',
-    'Weixin.exe', 'WeChat.exe', 'WeChatAppEx.exe', 'QQ.exe',
-    'SunloginClient.exe', 'ToDesk.exe', 'ToDesk_Service.exe', 'rustdesk.exe',
-    'TeamViewer.exe', 'AnyDesk.exe', 'tailscale.exe', 'tailscaled.exe',
-    'frpc.exe', 'Navicat.exe', 'cloudflared.exe'
-  ]
-  for (var i = 0; i < localProcesses.length; i++) {
-    R.push('PROCESS-NAME,' + localProcesses[i] + ',DIRECT')
-  }
 
   // 前置拦截
   R.push('DOMAIN-SUFFIX,jsdelivr.net,节点选择')
