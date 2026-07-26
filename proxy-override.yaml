@@ -73,6 +73,7 @@ sniffer:
 
 # ---- DNS 全加密 ----
 
+# >>> GENERATED:dns >>> （由 scripts/generate-yaml.js 维护数据行；注释行按下一行内容锚定，重新生成时自动保留）
 dns:
   enable: true
   listen: 127.0.0.1:1053
@@ -142,6 +143,7 @@ dns:
     - https://dns.google/dns-query
   respect-rules: true
   direct-nameserver-follow-policy: true
+# <<< GENERATED:dns <<<
 
 # ---- 代理订阅（proxy-provider） ----
 #  替换 sub.url 为你的机场订阅链接
@@ -366,6 +368,7 @@ proxy-groups:
 #  更新周期按序错开 15 秒：首次加载仍会一并下载，长期更新时刻会逐渐散开
 #  geolocation-cn / bilibili 仅供 DNS 分流（nameserver-policy）引用
 
+# >>> GENERATED:rule-providers >>> （由 scripts/generate-yaml.js 维护数据行；注释行按下一行内容锚定，重新生成时自动保留）
 rule-providers:
   anti-ad:
     type: http
@@ -743,8 +746,11 @@ rule-providers:
     path: ./ruleset/bilibili.mrs
     interval: 86190
     proxy: DIRECT
+# <<< GENERATED:rule-providers <<<
+
 # ---- 分流规则 ----
 
+# >>> GENERATED:rules >>> （由 scripts/generate-yaml.js 维护数据行；注释行按下一行内容锚定，重新生成时自动保留）
 rules:
   # --- BT / P2P 直连（放最前：机场普遍禁 BT，走代理有封号风险，
   #     且 tracker 拿到代理 IP 会拖慢下载）---
@@ -878,7 +884,8 @@ rules:
   - RULE-SET,facebook,海外社交
   - RULE-SET,instagram,海外社交
   - RULE-SET,linkedin,海外社交
-  - DOMAIN-SUFFIX,snapchat.com,海外社交  # snapchat 无 GEOSITE 分类
+  # snapchat 无独立 mrs 规则集(上游 404 已验证),保留硬编码
+  - DOMAIN-SUFFIX,snapchat.com,海外社交
   - RULE-SET,pinterest,海外社交
   - RULE-SET,threads,海外社交
   - RULE-SET,bluesky,海外社交
@@ -1006,3 +1013,4 @@ rules:
 
   # --- 最终匹配 ---
   - MATCH,漏网之鱼
+# <<< GENERATED:rules <<<

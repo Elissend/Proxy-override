@@ -164,6 +164,8 @@ Web 面板(如 [metacubexd](https://metacubex.github.io/metacubexd/))连接 `127
 
 本地复现:`node scripts/validate.js`、`python scripts/validate.py`(见各脚本头部注释)。
 
+**单一语义源**:YAML 中 dns / rule-providers / rules 三个区块(`>>> GENERATED <<<` 标记圈定)由 `scripts/generate-yaml.js` 从 JS 生成——修改分流请改 `proxy-override.js`,然后运行生成器同步;区块内的注释行按下一行内容锚定,重新生成时自动保留。CI 会拦截过期的生成区。
+
 ## 反馈
 
 分流有误伤或遗漏时欢迎提 [Issue](https://github.com/Elissend/Proxy-override/issues):附上目标域名、「连接」页命中的规则和策略组,能大幅加快定位。

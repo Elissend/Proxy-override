@@ -28,6 +28,9 @@ jobs:
       - name: 语义断言(规则数/引用完整性/正则逗号安全等)
         run: node scripts/validate.js
 
+      - name: YAML 生成区新鲜度(dns/规则集/规则三区块须与 JS 一致)
+        run: node scripts/generate-yaml.js --check
+
       - name: 导出 JS 生成配置
         run: node scripts/validate.js --dump > /tmp/js-dump.json
 
