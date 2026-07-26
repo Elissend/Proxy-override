@@ -21,7 +21,7 @@ Mihomo 分流配置,提供 JavaScript 覆写脚本与独立 YAML 模板两种形
 - **QUIC 精细阻断**:非国内站点的 UDP 443 默认拒绝(强制回落 TCP 走代理,速度更稳),微软/苹果/YouTube/Google 豁免
 - **防误伤前置放行**:微信小程序、国内推送/APM/归因 SDK、公共 CDN 不受广告规则波及
 - **全加密 DNS**:国内外分流解析,`respect-rules` 防泄露,fake-ip 豁免清单完善
-- **内存友好**:全 mrs 规则集,无 geosite.dat/geoip.dat 依赖,内核内存占用更低,安卓后台更稳
+- **内存友好**:全 mrs 规则集,无 geosite.dat/geoip.dat 依赖(实测桌面端内核 99MB → 75MB,−24%),安卓后台更稳
 - **安全加固**:uTLS 指纹伪装(JS 版自动为节点注入 client-fingerprint)、API 密钥鉴权
 
 ## 文件说明
@@ -92,7 +92,7 @@ BT/P2P 直连 → 个人自定义直连 → 误伤放行 → HTTPDNS 拦截
 几个值得了解的设计决策:
 
 - **局域网和国内 IP 排在 QUIC 阻断之前**——否则无域名的纯 IP UDP 443 流量(NAS、国内直连服务)会被误杀
-- **Telegram 有专门的 GEOIP 规则**——TG 客户端大量使用纯 IP 直连且无 SNI,仅靠域名规则会全部漏掉
+- **Telegram 有专门的 IP 段规则集(telegram-ip)**——TG 客户端大量使用纯 IP 直连且无 SNI,仅靠域名规则会全部漏掉
 - **AI 使用 `category-ai-!cn` 规则集**——覆盖 OpenAI/Claude/Gemini/Copilot/Perplexity 等,且保证 Gemini/AIStudio 归入 AI 组(对节点地区敏感);国内 AI(DeepSeek、Kimi、豆包等)无需任何单独规则,cn 规则集兜底直连
 - **`volces.com` 整域直连**——火山引擎是字节国内云(豆包/方舟 API),字节海外业务走 BytePlus 系域名,互不影响
 - **HTTPDNS 拦截位于误伤放行之后**——个别 App 因此异常时,在个人自定义区加一条直连即可豁免
@@ -170,7 +170,8 @@ Web 面板(如 [metacubexd](https://metacubex.github.io/metacubexd/))连接 `127
 
 ## 致谢
 
-- [MetaCubeX/meta-rules-dat](https://github.com/MetaCubeX/meta-rules-dat) — geosite/geoip 数据与 mrs 规则集
+- [MetaCubeX/meta-rules-dat](https://github.com/MetaCubeX/meta-rules-dat) — mrs 规则集(46/47,每日构建)
+- [v2fly/domain-list-community](https://github.com/v2fly/domain-list-community) — 上述规则集的社区数据源
 - [DustinWin/ruleset_geodata](https://github.com/DustinWin/ruleset_geodata) — 广告拦截规则集
 - [Koolson/Qure](https://github.com/Koolson/Qure) — 策略组图标
 
