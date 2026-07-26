@@ -1,6 +1,6 @@
 # Mihomo 通用配置模板
-# 版本：v3.3 (2026-07-26)
-# 架构：3 基础设施组 + 13 业务策略组 + 11 rule-providers + 全加密 DNS
+# 版本：v4.0 (2026-07-26)
+# 架构：3 基础设施组 + 13 业务策略组 + 47 rule-providers + 全加密 DNS
 # 适用：Mihomo / Clash.Meta 内核；任何机场订阅
 # 对应 JS 覆写脚本：proxy-override.js
 #
@@ -14,24 +14,21 @@
 
 unified-delay: true
 tcp-concurrent: true
-keep-alive-idle: 30
-keep-alive-interval: 15
-# uTLS 指纹伪装（对 vmess/vless 等基于 TLS 的节点生效）
-global-client-fingerprint: chrome
+# 大 idle + 适中 interval：减少移动设备被 keep-alive 探测唤醒的耗电
+# （官方 wiki 明确此项影响移动端功耗，OpenClash #2614 有抓包实测；
+#   Android 端内核强制禁用 keep-alive 不受影响；死连接最长滞留约 25 分钟）
+keep-alive-idle: 600
+keep-alive-interval: 60
+# 注：global-client-fingerprint 已被新内核移除（v1.19.29+）。如需 uTLS 指纹伪装，
+# 在节点上自行添加 client-fingerprint: chrome（JS 覆写版会自动为节点注入）
 
 profile:
   store-selected: true
   # 重启后保留 fake-ip 映射，避免应用 DNS 缓存指向失效地址导致短暂断流
   store-fake-ip: true
 
-geox-url:
-  geosite: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geosite.dat
-  geoip: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip.dat
-  geoip-mmdb: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip.metadb
-
-# geosite/geoip 数据自动更新（否则 .dat 只在首次下载，之后永不更新）
-geo-auto-update: true
-geo-update-interval: 24
+# v4.0 全 mrs 化：无 GEOSITE/GEOIP 规则，不再加载 geosite.dat / geoip 数据，
+# 内核内存占用显著降低（安卓后台更稳），也无需 geo 数据下载与自动更新
 
 # ---- 端口 / SOCKS / 混合入站 ----
 
@@ -83,12 +80,12 @@ dns:
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
   fake-ip-filter:
-    # geosite:private 覆盖 .home.arpa / .internal 等更多局域网域名形式
-    - geosite:private
     - +.lan
     - +.local
     - +.localhost
     - +.direct
+    - +.home.arpa
+    - +.internal
     - +.msftconnecttest.com
     - +.msftncsi.com
     - +.baidu.com
@@ -135,7 +132,7 @@ dns:
   # 注：biliintl（海外站）与 aistudio 已删——它们路由到代理组，
   # fake-ip 模式下本地解析结果不会被使用，属于死条目
   nameserver-policy:
-    geosite:cn,geolocation-cn,bilibili:
+    rule-set:cn_sites,geolocation-cn,bilibili:
       - https://dns.alidns.com/dns-query
       - https://doh.pub/dns-query
       - tls://223.5.5.5
@@ -364,13 +361,10 @@ proxy-groups:
       - DIRECT
       - REJECT
 
-# ---- 远程规则集（9 个 MRS） ----
-#  所有 URL 使用 fastly.jsdelivr.net CDN 分发
-#  下载统一走 DIRECT：指向策略组时，首次启动或组内选中节点故障会导致
-#  规则集静默更新失败；fastly.jsdelivr.net 国内可直连
-#  中国大陆用户遇到下载失败可替换以下任一镜像:
-#    fastly.jsdelivr.net    → testingcf.jsdelivr.net (Cloudflare CDN)
-#    fastly.jsdelivr.net    → gcore.jsdelivr.net     (Gcore CDN)
+# ---- 远程规则集（47 个 MRS，全 mrs 化） ----
+#  下载统一走 DIRECT；fastly.jsdelivr.net 国内可直连，失败可换镜像
+#  更新间隔按序错开 15 秒，避免全部规则集同时唤醒下载
+#  geolocation-cn / bilibili 仅供 DNS 分流（nameserver-policy）引用
 
 rule-providers:
   anti-ad:
@@ -379,102 +373,376 @@ rule-providers:
     format: mrs
     url: https://fastly.jsdelivr.net/gh/DustinWin/ruleset_geodata@mihomo-ruleset/ads.mrs
     path: ./ruleset/anti-ad.mrs
+    interval: 85500
+    proxy: DIRECT
+  ads-all:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/category-ads-all.mrs
+    path: ./ruleset/ads-all.mrs
     interval: 85515
     proxy: DIRECT
-
-  # 公共 BT tracker（BT 流量必须直连：机场普遍禁 P2P，走代理有封号风险）
   bt-tracker:
     type: http
     behavior: domain
     format: mrs
     url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/category-public-tracker.mrs
     path: ./ruleset/bt-tracker.mrs
-    interval: 86475
+    interval: 85530
     proxy: DIRECT
-
-  # 国内 HTTPDNS 服务端点（拦截后 App 回落系统 DNS，防止绕过域名分流）
   httpdns:
     type: http
     behavior: domain
     format: mrs
     url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/category-httpdns-cn.mrs
     path: ./ruleset/httpdns.mrs
-    interval: 86490
+    interval: 85545
     proxy: DIRECT
-
-  # category-ai-!cn 含 OpenAI/Claude/Gemini/Copilot/Perplexity/Mistral 等主流 AI 服务
+  private:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/private.mrs
+    path: ./ruleset/private.mrs
+    interval: 85560
+    proxy: DIRECT
+  private-ip:
+    type: http
+    behavior: ipcidr
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geoip/private.mrs
+    path: ./ruleset/private-ip.mrs
+    interval: 85575
+    proxy: DIRECT
+  cn-ip:
+    type: http
+    behavior: ipcidr
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geoip/cn.mrs
+    path: ./ruleset/cn-ip.mrs
+    interval: 85590
+    proxy: DIRECT
   ai:
     type: http
     behavior: domain
     format: mrs
     url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/category-ai-!cn.mrs
-    path: ./ruleset/meta-ai.mrs
-    interval: 85530
+    path: ./ruleset/ai.mrs
+    interval: 85605
     proxy: DIRECT
-
+  youtube:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/youtube.mrs
+    path: ./ruleset/youtube.mrs
+    interval: 85620
+    proxy: DIRECT
+  google:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/google.mrs
+    path: ./ruleset/google.mrs
+    interval: 85635
+    proxy: DIRECT
+  telegram:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/telegram.mrs
+    path: ./ruleset/telegram.mrs
+    interval: 85650
+    proxy: DIRECT
+  telegram-ip:
+    type: http
+    behavior: ipcidr
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geoip/telegram.mrs
+    path: ./ruleset/telegram-ip.mrs
+    interval: 85665
+    proxy: DIRECT
+  twitter:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/twitter.mrs
+    path: ./ruleset/twitter.mrs
+    interval: 85680
+    proxy: DIRECT
+  reddit:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/reddit.mrs
+    path: ./ruleset/reddit.mrs
+    interval: 85695
+    proxy: DIRECT
+  facebook:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/facebook.mrs
+    path: ./ruleset/facebook.mrs
+    interval: 85710
+    proxy: DIRECT
+  instagram:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/instagram.mrs
+    path: ./ruleset/instagram.mrs
+    interval: 85725
+    proxy: DIRECT
+  linkedin:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/linkedin.mrs
+    path: ./ruleset/linkedin.mrs
+    interval: 85740
+    proxy: DIRECT
+  pinterest:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/pinterest.mrs
+    path: ./ruleset/pinterest.mrs
+    interval: 85755
+    proxy: DIRECT
+  threads:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/threads.mrs
+    path: ./ruleset/threads.mrs
+    interval: 85770
+    proxy: DIRECT
+  bluesky:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/bluesky.mrs
+    path: ./ruleset/bluesky.mrs
+    interval: 85785
+    proxy: DIRECT
+  quora:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/quora.mrs
+    path: ./ruleset/quora.mrs
+    interval: 85800
+    proxy: DIRECT
+  medium:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/medium.mrs
+    path: ./ruleset/medium.mrs
+    interval: 85815
+    proxy: DIRECT
+  imgur:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/imgur.mrs
+    path: ./ruleset/imgur.mrs
+    interval: 85830
+    proxy: DIRECT
+  flickr:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/flickr.mrs
+    path: ./ruleset/flickr.mrs
+    interval: 85845
+    proxy: DIRECT
+  tumblr:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/tumblr.mrs
+    path: ./ruleset/tumblr.mrs
+    interval: 85860
+    proxy: DIRECT
+  pixiv:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/pixiv.mrs
+    path: ./ruleset/pixiv.mrs
+    interval: 85875
+    proxy: DIRECT
   tiktok:
     type: http
     behavior: domain
     format: mrs
     url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/tiktok.mrs
-    path: ./ruleset/meta-tiktok.mrs
-    interval: 85575
+    path: ./ruleset/tiktok.mrs
+    interval: 85890
     proxy: DIRECT
-
+  netflix:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/netflix.mrs
+    path: ./ruleset/netflix.mrs
+    interval: 85905
+    proxy: DIRECT
+  spotify:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/spotify.mrs
+    path: ./ruleset/spotify.mrs
+    interval: 85920
+    proxy: DIRECT
+  hulu:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/hulu.mrs
+    path: ./ruleset/hulu.mrs
+    interval: 85935
+    proxy: DIRECT
+  hbo:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/hbo.mrs
+    path: ./ruleset/hbo.mrs
+    interval: 85950
+    proxy: DIRECT
+  disney:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/disney.mrs
+    path: ./ruleset/disney.mrs
+    interval: 85965
+    proxy: DIRECT
+  primevideo:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/primevideo.mrs
+    path: ./ruleset/primevideo.mrs
+    interval: 85980
+    proxy: DIRECT
+  twitch:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/twitch.mrs
+    path: ./ruleset/twitch.mrs
+    interval: 85995
+    proxy: DIRECT
+  vimeo:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/vimeo.mrs
+    path: ./ruleset/vimeo.mrs
+    interval: 86010
+    proxy: DIRECT
+  dailymotion:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/dailymotion.mrs
+    path: ./ruleset/dailymotion.mrs
+    interval: 86025
+    proxy: DIRECT
+  games-cn:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/category-games-cn.mrs
+    path: ./ruleset/games-cn.mrs
+    interval: 86040
+    proxy: DIRECT
+  games-global:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/category-games-!cn.mrs
+    path: ./ruleset/games-global.mrs
+    interval: 86055
+    proxy: DIRECT
   github:
     type: http
     behavior: domain
     format: mrs
     url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/github.mrs
-    path: ./ruleset/meta-github.mrs
-    interval: 85635
+    path: ./ruleset/github.mrs
+    interval: 86070
     proxy: DIRECT
-
+  dev:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/category-dev.mrs
+    path: ./ruleset/dev.mrs
+    interval: 86085
+    proxy: DIRECT
   microsoft:
     type: http
     behavior: domain
     format: mrs
     url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/microsoft.mrs
-    path: ./ruleset/meta-microsoft.mrs
-    interval: 85650
+    path: ./ruleset/microsoft.mrs
+    interval: 86100
     proxy: DIRECT
-
   apple:
     type: http
     behavior: domain
     format: mrs
     url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/apple.mrs
-    path: ./ruleset/meta-apple.mrs
-    interval: 85665
+    path: ./ruleset/apple.mrs
+    interval: 86115
     proxy: DIRECT
-
-  proxy_sites:
+  gfw:
     type: http
     behavior: domain
     format: mrs
-    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/geolocation-!cn.mrs
-    path: ./ruleset/proxy_sites.mrs
-    interval: 86415
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/gfw.mrs
+    path: ./ruleset/gfw.mrs
+    interval: 86130
     proxy: DIRECT
-
   cn_sites:
     type: http
     behavior: domain
     format: mrs
     url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/cn.mrs
     path: ./ruleset/cn_sites.mrs
-    interval: 86430
+    interval: 86145
     proxy: DIRECT
-
-  gfw:
+  proxy_sites:
     type: http
     behavior: domain
     format: mrs
-    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/gfw.mrs
-    path: ./ruleset/meta-gfw.mrs
-    interval: 86445
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/geolocation-!cn.mrs
+    path: ./ruleset/proxy_sites.mrs
+    interval: 86160
     proxy: DIRECT
-
+  geolocation-cn:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/geolocation-cn.mrs
+    path: ./ruleset/geolocation-cn.mrs
+    interval: 86175
+    proxy: DIRECT
+  bilibili:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/bilibili.mrs
+    path: ./ruleset/bilibili.mrs
+    interval: 86190
+    proxy: DIRECT
 # ---- 分流规则 ----
 
 rules:
@@ -536,24 +804,24 @@ rules:
   # --- 局域网 / 私有网络（必须在 QUIC 阻断之前：局域网纯 IP 流量匹配不了
   #     domain 类型的 cn_sites，NOT 取反后 UDP 443 会被误 REJECT）---
   - DST-PORT,7680,REJECT
-  - GEOSITE,private,DIRECT
-  - GEOIP,private,DIRECT,no-resolve
+  - RULE-SET,private,DIRECT
+  - RULE-SET,private-ip,DIRECT,no-resolve
   - DOMAIN,localhost,DIRECT
   - DOMAIN-SUFFIX,local,DIRECT
 
   # --- 国内 IP 提前直连（no-resolve：仅命中无域名的纯 IP 流量，
   #     顺带豁免国内 IP 的 QUIC 阻断；域名流量不受影响）---
-  - GEOIP,CN,国内直连,no-resolve
+  - RULE-SET,cn-ip,国内直连,no-resolve
 
   # --- 广告拦截 ---
-  - GEOSITE,category-ads-all,广告拦截
+  - RULE-SET,ads-all,广告拦截
   - RULE-SET,anti-ad,广告拦截
 
   # --- QUIC 阻断（微软/苹果/YouTube/Google 豁免，其余非中国站点 REJECT）---
   - AND,((DST-PORT,443),(NETWORK,UDP),(RULE-SET,microsoft)),微软
   - AND,((DST-PORT,443),(NETWORK,UDP),(RULE-SET,apple)),苹果
-  - AND,((DST-PORT,443),(NETWORK,UDP),(GEOSITE,youtube)),YouTube
-  - AND,((DST-PORT,443),(NETWORK,UDP),(GEOSITE,google)),Google
+  - AND,((DST-PORT,443),(NETWORK,UDP),(RULE-SET,youtube)),YouTube
+  - AND,((DST-PORT,443),(NETWORK,UDP),(RULE-SET,google)),Google
   - AND,((DST-PORT,443),(NETWORK,UDP),(NOT,((RULE-SET,cn_sites)))),REJECT
 
   # --- 前置拦截（规则集 CDN / DoH 域名）---
@@ -563,9 +831,9 @@ rules:
   - DOMAIN,dns.cloudflare.com,节点选择
 
   # --- YouTube ---
-  - GEOSITE,youtube,YouTube
+  - RULE-SET,youtube,YouTube
 
-  # --- AI（须在 GEOSITE,google 之前：category-ai-!cn 含 gemini/aistudio 等
+  # --- AI（须在 google 规则集之前：category-ai-!cn 含 gemini/aistudio 等
   #     Google 域名，确保它们归入对地区敏感的 AI 组）---
   - RULE-SET,ai,AI
   # 以下为 category-ai-!cn 未覆盖的补充域名
@@ -577,33 +845,33 @@ rules:
   - DOMAIN-SUFFIX,runpod.io,AI
 
   # --- Google 服务（在 AI 之后，避免遮蔽特定 API 子域名；
-  #     GEOSITE,google 已含 gstatic.com / googleapis.com 等全部 Google 域名）---
-  - GEOSITE,google,Google
+  #     google 规则集已含 gstatic.com / googleapis.com 等全部 Google 域名）---
+  - RULE-SET,google,Google
 
   # 注：DeepSeek 等国内 AI 无需单独规则——category-ai-!cn 按命名契约
   #     排除国内服务（已逐一验证），cn 规则集兜底直连
 
-  # --- Telegram（客户端大量使用纯 IP 直连且无 SNI，GEOIP 规则必不可少，
+  # --- Telegram（客户端大量使用纯 IP 直连且无 SNI，IP 段规则必不可少，
   #     否则这些流量全部落入漏网之鱼）---
-  - GEOSITE,telegram,Telegram
-  - GEOIP,telegram,Telegram,no-resolve
+  - RULE-SET,telegram,Telegram
+  - RULE-SET,telegram-ip,Telegram,no-resolve
 
   # --- 海外社交 ---
-  - GEOSITE,twitter,海外社交
-  - GEOSITE,reddit,海外社交
-  - GEOSITE,facebook,海外社交
-  - GEOSITE,instagram,海外社交
-  - GEOSITE,linkedin,海外社交
+  - RULE-SET,twitter,海外社交
+  - RULE-SET,reddit,海外社交
+  - RULE-SET,facebook,海外社交
+  - RULE-SET,instagram,海外社交
+  - RULE-SET,linkedin,海外社交
   - DOMAIN-SUFFIX,snapchat.com,海外社交  # snapchat 无 GEOSITE 分类
-  - GEOSITE,pinterest,海外社交
-  - GEOSITE,threads,海外社交
-  - GEOSITE,bluesky,海外社交
-  - GEOSITE,quora,海外社交
-  - GEOSITE,medium,海外社交
-  - GEOSITE,imgur,海外社交
-  - GEOSITE,flickr,海外社交
-  - GEOSITE,tumblr,海外社交
-  - GEOSITE,pixiv,海外社交
+  - RULE-SET,pinterest,海外社交
+  - RULE-SET,threads,海外社交
+  - RULE-SET,bluesky,海外社交
+  - RULE-SET,quora,海外社交
+  - RULE-SET,medium,海外社交
+  - RULE-SET,imgur,海外社交
+  - RULE-SET,flickr,海外社交
+  - RULE-SET,tumblr,海外社交
+  - RULE-SET,pixiv,海外社交
 
   # --- 字节海外专属 ---
   - DOMAIN-SUFFIX,byteoversea.com,节点选择
@@ -620,15 +888,15 @@ rules:
 
   # --- 流媒体 ---
   - RULE-SET,tiktok,流媒体
-  - GEOSITE,netflix,流媒体
-  - GEOSITE,spotify,流媒体
-  - GEOSITE,hulu,流媒体
-  - GEOSITE,hbo,流媒体
-  - GEOSITE,disney,流媒体
-  - GEOSITE,primevideo,流媒体
-  - GEOSITE,twitch,流媒体
-  - GEOSITE,vimeo,流媒体
-  - GEOSITE,dailymotion,流媒体
+  - RULE-SET,netflix,流媒体
+  - RULE-SET,spotify,流媒体
+  - RULE-SET,hulu,流媒体
+  - RULE-SET,hbo,流媒体
+  - RULE-SET,disney,流媒体
+  - RULE-SET,primevideo,流媒体
+  - RULE-SET,twitch,流媒体
+  - RULE-SET,vimeo,流媒体
+  - RULE-SET,dailymotion,流媒体
   # 以下 4 项无 GEOSITE 分类，保留硬编码
   - DOMAIN-SUFFIX,discoveryplus.com,流媒体
   - DOMAIN-SUFFIX,paramountplus.com,流媒体
@@ -638,8 +906,8 @@ rules:
   # --- 游戏平台：国服直连，海外走代理 ---
   # category-games-cn 含 mihoyo-cn / tencent-games / kurogames / bilibili-game 等
   # category-games-!cn 含 Steam / Epic / Blizzard / Nintendo / PlayStation / Xbox 等
-  - GEOSITE,category-games-cn,DIRECT
-  - GEOSITE,category-games-!cn,海外游戏
+  - RULE-SET,games-cn,DIRECT
+  - RULE-SET,games-global,海外游戏
 
   # --- 开发工具 ---
   # 注：docker/npmjs/pypi/crates/jetbrains/stackoverflow/gitlab/almalinux 等
@@ -666,7 +934,7 @@ rules:
   - DOMAIN-SUFFIX,fedoraproject.org,DIRECT
   # Fermilab 镜像（AlmaLinux 默认仓库，美国服务器）
   - DOMAIN-SUFFIX,linux-mirrors.fnal.gov,开发工具
-  - GEOSITE,category-dev,开发工具
+  - RULE-SET,dev,开发工具
 
   # --- 苹果（apple.com.cn / icloud.com.cn / mzstatic.com 已在 apple 规则集内）---
   - DOMAIN-SUFFIX,icloud.com,DIRECT
@@ -701,8 +969,8 @@ rules:
   - DST-PORT,3479,DIRECT
 
   # --- 基础分流 ---
-  # 注：GEOSITE,cn 与 RULE-SET,cn_sites 数据同源（MetaCubeX geosite），仅保留后者；
-  #     GEOIP,CN 已前移至局域网规则之后
+  # 注：cn_sites 与旧版 GEOSITE,cn 数据同源（MetaCubeX geosite）；
+  #     国内 IP（cn-ip）已前移至局域网规则之后
   - RULE-SET,gfw,节点选择
   - RULE-SET,cn_sites,国内直连
   - RULE-SET,proxy_sites,节点选择

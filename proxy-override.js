@@ -1,12 +1,12 @@
 // Mihomo 覆写脚本
-// 版本：v3.3 (2026-07-26)
+// 版本：v4.0 (2026-07-26)
 // 适用：支持 JavaScript 覆写的 Mihomo 客户端；TUN 由客户端自行控制
 //
 // 导入方法：在客户端中创建覆写脚本并粘贴本文件全部内容，
 // 再到订阅的「覆写」设置中启用该脚本，刷新订阅生效。
 // 具体入口以客户端说明为准，README 有详细步骤说明。
 
-const VERSION = 'v3.3'
+const VERSION = 'v4.0'
 
 // 兼容部分 Mihomo 客户端精简的 JS 运行环境（console 可能不存在）
 var log = (typeof console !== 'undefined' && console.log) ? console.log.bind(console) : function() {}
@@ -36,23 +36,18 @@ var CUSTOM_DIRECT_PORTS = [33068, 6540, 26880]
 function overwriteGeneral(config) {
   config['unified-delay'] = true
   config['tcp-concurrent'] = true
-  config['keep-alive-idle'] = 30
-  config['keep-alive-interval'] = 15
-  // uTLS 指纹伪装（对 vmess/vless 等基于 TLS 的节点生效）
-  config['global-client-fingerprint'] = 'chrome'
-
+  // 大 idle + 适中 interval：减少移动设备被 keep-alive 探测唤醒的耗电
+  // （官方 wiki 明确此项影响移动端功耗，OpenClash #2614 有抓包实测；
+  //   Android 端内核强制禁用 keep-alive 不受影响；死连接最长滞留约 25 分钟）
+  config['keep-alive-idle'] = 600
+  config['keep-alive-interval'] = 60
   if (!config.profile) config.profile = {}
   config.profile['store-selected'] = true
   // 重启后保留 fake-ip 映射，避免应用 DNS 缓存指向失效地址导致短暂断流
   config.profile['store-fake-ip'] = true
 
-  config['geox-url'] = {
-    geosite: CDN_BASE + '/gh/MetaCubeX/meta-rules-dat@release/geosite.dat',
-    geoip: CDN_BASE + '/gh/MetaCubeX/meta-rules-dat@release/geoip.dat'
-  }
-  // geosite/geoip 数据自动更新（否则 .dat 只在首次下载，之后永不更新）
-  config['geo-auto-update'] = true
-  config['geo-update-interval'] = 24
+  // v4.0 全 mrs 化：无 GEOSITE/GEOIP 规则，不再加载 geosite.dat / geoip 数据，
+  // 内核内存占用显著降低（安卓后台更稳），也无需 geo 数据下载与自动更新
 
   // 注：external-controller / secret 由 Mihomo 客户端自行管理，
   // 覆写脚本不设置，避免破坏客户端与内核的通信；独立部署请用 YAML 模板
@@ -89,9 +84,8 @@ function overwriteGeneral(config) {
     'enhanced-mode': 'fake-ip',
     'fake-ip-range': '198.18.0.1/16',
     'fake-ip-filter': [
-      // geosite:private 覆盖 .home.arpa / .internal 等更多局域网域名形式
-      'geosite:private',
       '+.lan', '+.local', '+.localhost', '+.direct',
+      '+.home.arpa', '+.internal',
       '+.msftconnecttest.com', '+.msftncsi.com',
       '+.baidu.com', '+.bilibili.com', '+.bing.com', '+.chiphell.com',
       '+.oray.com', '+.sunlogin.com', '+.todesk.com', '+.rustdesk.com',
@@ -113,7 +107,7 @@ function overwriteGeneral(config) {
     // 注：biliintl（海外站）与 aistudio 已删——它们路由到代理组，
     // fake-ip 模式下本地解析结果不会被使用，属于死条目
     'nameserver-policy': {
-      'geosite:cn,geolocation-cn,bilibili': [
+      'rule-set:cn_sites,geolocation-cn,bilibili': [
         'https://dns.alidns.com/dns-query', 'https://doh.pub/dns-query',
         'tls://223.5.5.5', 'tls://223.6.6.6'
       ]
@@ -124,11 +118,24 @@ function overwriteGeneral(config) {
   }
 }
 
+// ---- uTLS 指纹逐节点注入 ----
+// 注：global-client-fingerprint 已被新内核移除（v1.19.29+ 会报错忽略），
+// 改为仅对未自带 client-fingerprint 的 TLS 系节点逐个注入
+function applyClientFingerprint(proxies) {
+  var TYPES = { vmess: 1, vless: 1, trojan: 1 }
+  var n = 0
+  for (var i = 0; i < proxies.length; i++) {
+    var p = proxies[i]
+    if (p && TYPES[p.type] && !p['client-fingerprint']) { p['client-fingerprint'] = 'chrome'; n++ }
+  }
+  if (n) log('[' + VERSION + '] client-fingerprint: chrome -> ' + n + ' proxies')
+}
+
 // ---- 判断是否为信息/过期节点 ----
 
 function isInfoNode(name) {
   if (!name || typeof name !== 'string') return true
-  return /(剩余|到期|官网|套餐|流量|网址|地址|过期|重置|更新|应急|免费|试用|Sign|Login|Register|Help|FAQ|客服|联系|网站)/i.test(name)
+  return /(剩余|到期|官网|套餐|流量|网址|地址|过期|重置|更新|应急|免费|试用|登录|注册|Sign|Login|Register|Help|FAQ|客服|联系|网站)/i.test(name)
 }
 
 // ---- 节点分类 ----
@@ -228,55 +235,71 @@ function injectRuleProviders(config) {
 
   var RP = config['rule-providers']
 
-  // 下载统一走 DIRECT：指向策略组时，首次启动或组内选中节点故障会导致
+  // 下载统一走 DIRECT：指向策略组时，首次启动或选中节点故障会导致
   // 规则集静默更新失败；fastly.jsdelivr.net 国内可直连，失败可换镜像
-
-  RP['anti-ad'] = { type: 'http', behavior: 'domain', format: 'mrs',
-    url: CDN_BASE + '/gh/DustinWin/ruleset_geodata@mihomo-ruleset/ads.mrs',
-    path: './ruleset/anti-ad.mrs', interval: 85515, proxy: 'DIRECT' }
-
-  // 公共 BT tracker（BT 流量必须直连：机场普遍禁 P2P，走代理有封号风险）
-  RP['bt-tracker'] = { type: 'http', behavior: 'domain', format: 'mrs',
-    url: CDN_BASE + '/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/category-public-tracker.mrs',
-    path: './ruleset/bt-tracker.mrs', interval: 86475, proxy: 'DIRECT' }
-
-  // 国内 HTTPDNS 服务端点（拦截后 App 回落系统 DNS，防止绕过域名分流）
-  RP['httpdns'] = { type: 'http', behavior: 'domain', format: 'mrs',
-    url: CDN_BASE + '/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/category-httpdns-cn.mrs',
-    path: './ruleset/httpdns.mrs', interval: 86490, proxy: 'DIRECT' }
-
-  // category-ai-!cn 含 OpenAI/Claude/Gemini/Copilot/Perplexity/Mistral 等主流 AI 服务
-  RP['ai'] = { type: 'http', behavior: 'domain', format: 'mrs',
-    url: CDN_BASE + '/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/category-ai-!cn.mrs',
-    path: './ruleset/meta-ai.mrs', interval: 85530, proxy: 'DIRECT' }
-
-  RP['tiktok'] = { type: 'http', behavior: 'domain', format: 'mrs',
-    url: CDN_BASE + '/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/tiktok.mrs',
-    path: './ruleset/meta-tiktok.mrs', interval: 85575, proxy: 'DIRECT' }
-
-  RP['github'] = { type: 'http', behavior: 'domain', format: 'mrs',
-    url: CDN_BASE + '/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/github.mrs',
-    path: './ruleset/meta-github.mrs', interval: 85635, proxy: 'DIRECT' }
-
-  RP['microsoft'] = { type: 'http', behavior: 'domain', format: 'mrs',
-    url: CDN_BASE + '/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/microsoft.mrs',
-    path: './ruleset/meta-microsoft.mrs', interval: 85650, proxy: 'DIRECT' }
-
-  RP['apple'] = { type: 'http', behavior: 'domain', format: 'mrs',
-    url: CDN_BASE + '/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/apple.mrs',
-    path: './ruleset/meta-apple.mrs', interval: 85665, proxy: 'DIRECT' }
-
-  RP['proxy_sites'] = { type: 'http', behavior: 'domain', format: 'mrs',
-    url: CDN_BASE + '/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/geolocation-!cn.mrs',
-    path: './ruleset/proxy_sites.mrs', interval: 86415, proxy: 'DIRECT' }
-
-  RP['cn_sites'] = { type: 'http', behavior: 'domain', format: 'mrs',
-    url: CDN_BASE + '/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/cn.mrs',
-    path: './ruleset/cn_sites.mrs', interval: 86430, proxy: 'DIRECT' }
-
-  RP['gfw'] = { type: 'http', behavior: 'domain', format: 'mrs',
-    url: CDN_BASE + '/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/gfw.mrs',
-    path: './ruleset/meta-gfw.mrs', interval: 86445, proxy: 'DIRECT' }
+  //
+  // v4.0 全 mrs 化：分流数据全部来自 mrs 规则集（不加载 geosite.dat）。
+  // 表驱动定义：[名称, 来源, 文件名, 行为]
+  //   dustin → DustinWin/ruleset_geodata；geosite/geoip → MetaCubeX
+  // geolocation-cn / bilibili 仅供 DNS 分流（nameserver-policy）引用
+  var SETS = [
+    ['anti-ad', 'dustin', 'ads', 'domain'],
+    ['ads-all', 'geosite', 'category-ads-all', 'domain'],
+    ['bt-tracker', 'geosite', 'category-public-tracker', 'domain'],
+    ['httpdns', 'geosite', 'category-httpdns-cn', 'domain'],
+    ['private', 'geosite', 'private', 'domain'],
+    ['private-ip', 'geoip', 'private', 'ipcidr'],
+    ['cn-ip', 'geoip', 'cn', 'ipcidr'],
+    ['ai', 'geosite', 'category-ai-!cn', 'domain'],
+    ['youtube', 'geosite', 'youtube', 'domain'],
+    ['google', 'geosite', 'google', 'domain'],
+    ['telegram', 'geosite', 'telegram', 'domain'],
+    ['telegram-ip', 'geoip', 'telegram', 'ipcidr'],
+    ['twitter', 'geosite', 'twitter', 'domain'],
+    ['reddit', 'geosite', 'reddit', 'domain'],
+    ['facebook', 'geosite', 'facebook', 'domain'],
+    ['instagram', 'geosite', 'instagram', 'domain'],
+    ['linkedin', 'geosite', 'linkedin', 'domain'],
+    ['pinterest', 'geosite', 'pinterest', 'domain'],
+    ['threads', 'geosite', 'threads', 'domain'],
+    ['bluesky', 'geosite', 'bluesky', 'domain'],
+    ['quora', 'geosite', 'quora', 'domain'],
+    ['medium', 'geosite', 'medium', 'domain'],
+    ['imgur', 'geosite', 'imgur', 'domain'],
+    ['flickr', 'geosite', 'flickr', 'domain'],
+    ['tumblr', 'geosite', 'tumblr', 'domain'],
+    ['pixiv', 'geosite', 'pixiv', 'domain'],
+    ['tiktok', 'geosite', 'tiktok', 'domain'],
+    ['netflix', 'geosite', 'netflix', 'domain'],
+    ['spotify', 'geosite', 'spotify', 'domain'],
+    ['hulu', 'geosite', 'hulu', 'domain'],
+    ['hbo', 'geosite', 'hbo', 'domain'],
+    ['disney', 'geosite', 'disney', 'domain'],
+    ['primevideo', 'geosite', 'primevideo', 'domain'],
+    ['twitch', 'geosite', 'twitch', 'domain'],
+    ['vimeo', 'geosite', 'vimeo', 'domain'],
+    ['dailymotion', 'geosite', 'dailymotion', 'domain'],
+    ['games-cn', 'geosite', 'category-games-cn', 'domain'],
+    ['games-global', 'geosite', 'category-games-!cn', 'domain'],
+    ['github', 'geosite', 'github', 'domain'],
+    ['dev', 'geosite', 'category-dev', 'domain'],
+    ['microsoft', 'geosite', 'microsoft', 'domain'],
+    ['apple', 'geosite', 'apple', 'domain'],
+    ['gfw', 'geosite', 'gfw', 'domain'],
+    ['cn_sites', 'geosite', 'cn', 'domain'],
+    ['proxy_sites', 'geosite', 'geolocation-!cn', 'domain'],
+    ['geolocation-cn', 'geosite', 'geolocation-cn', 'domain'],
+    ['bilibili', 'geosite', 'bilibili', 'domain']
+  ]
+  for (var i = 0; i < SETS.length; i++) {
+    var s = SETS[i]
+    var url = s[1] === 'dustin'
+      ? CDN_BASE + '/gh/DustinWin/ruleset_geodata@mihomo-ruleset/' + s[2] + '.mrs'
+      : CDN_BASE + '/gh/MetaCubeX/meta-rules-dat@meta/geo/' + (s[1] === 'geoip' ? 'geoip/' : 'geosite/') + s[2] + '.mrs'
+    // 更新间隔按序错开 15 秒，避免全部规则集同时唤醒下载
+    RP[s[0]] = { type: 'http', behavior: s[3], format: 'mrs', url: url,
+      path: './ruleset/' + s[0] + '.mrs', interval: 85500 + i * 15, proxy: 'DIRECT' }
+  }
 
   log('[' + VERSION + '] Injected ' + Object.keys(RP).length + ' rule-providers')
 }
@@ -342,24 +365,24 @@ function injectRules(config) {
   // 局域网 / 私有网络（必须在 QUIC 阻断之前：局域网纯 IP 流量匹配不了
   // domain 类型的 cn_sites，NOT 取反后 UDP 443 会被误 REJECT）
   R.push('DST-PORT,7680,REJECT')
-  R.push('GEOSITE,private,DIRECT')
-  R.push('GEOIP,private,DIRECT,no-resolve')
+  R.push('RULE-SET,private,DIRECT')
+  R.push('RULE-SET,private-ip,DIRECT,no-resolve')
   R.push('DOMAIN,localhost,DIRECT')
   R.push('DOMAIN-SUFFIX,local,DIRECT')
 
   // 国内 IP 提前直连（no-resolve：仅命中无域名的纯 IP 流量，
   // 顺带豁免国内 IP 的 QUIC 阻断；域名流量不受影响）
-  R.push('GEOIP,CN,国内直连,no-resolve')
+  R.push('RULE-SET,cn-ip,国内直连,no-resolve')
 
   // 广告拦截
-  R.push('GEOSITE,category-ads-all,广告拦截')
+  R.push('RULE-SET,ads-all,广告拦截')
   R.push('RULE-SET,anti-ad,广告拦截')
 
   // QUIC 阻断（微软/苹果/YouTube/Google 豁免，其余非中国站点 REJECT）
   R.push('AND,((DST-PORT,443),(NETWORK,UDP),(RULE-SET,microsoft)),微软')
   R.push('AND,((DST-PORT,443),(NETWORK,UDP),(RULE-SET,apple)),苹果')
-  R.push('AND,((DST-PORT,443),(NETWORK,UDP),(GEOSITE,youtube)),YouTube')
-  R.push('AND,((DST-PORT,443),(NETWORK,UDP),(GEOSITE,google)),Google')
+  R.push('AND,((DST-PORT,443),(NETWORK,UDP),(RULE-SET,youtube)),YouTube')
+  R.push('AND,((DST-PORT,443),(NETWORK,UDP),(RULE-SET,google)),Google')
   R.push('AND,((DST-PORT,443),(NETWORK,UDP),(NOT,((RULE-SET,cn_sites)))),REJECT')
 
   // 前置拦截（规则集 CDN / DoH 域名）
@@ -369,9 +392,9 @@ function injectRules(config) {
   R.push('DOMAIN,dns.cloudflare.com,节点选择')
 
   // YouTube
-  R.push('GEOSITE,youtube,YouTube')
+  R.push('RULE-SET,youtube,YouTube')
 
-  // AI（须在 GEOSITE,google 之前：category-ai-!cn 含 gemini/aistudio 等
+  // AI（须在 google 规则集之前：category-ai-!cn 含 gemini/aistudio 等
   // Google 域名，确保它们归入对地区敏感的 AI 组）
   R.push('RULE-SET,ai,AI')
   // 以下为 category-ai-!cn 未覆盖的补充域名
@@ -384,32 +407,32 @@ function injectRules(config) {
   }
 
   // Google 服务（放在 AI 之后，避免遮蔽特定 API 子域名；
-  // GEOSITE,google 已含 gstatic.com / googleapis.com 等全部 Google 域名）
-  R.push('GEOSITE,google,Google')
+  // google 规则集已含 gstatic.com / googleapis.com 等全部 Google 域名）
+  R.push('RULE-SET,google,Google')
 
   // 注：DeepSeek 等国内 AI 无需单独规则——category-ai-!cn 按命名契约
   // 排除国内服务（已逐一验证），cn 规则集兜底直连
-  // Telegram（客户端大量使用纯 IP 直连且无 SNI，GEOIP 规则必不可少，
+  // Telegram（客户端大量使用纯 IP 直连且无 SNI，IP 段规则必不可少，
   // 否则这些流量全部落入漏网之鱼）
-  R.push('GEOSITE,telegram,Telegram')
-  R.push('GEOIP,telegram,Telegram,no-resolve')
+  R.push('RULE-SET,telegram,Telegram')
+  R.push('RULE-SET,telegram-ip,Telegram,no-resolve')
 
   // 海外社交
-  R.push('GEOSITE,twitter,海外社交')
-  R.push('GEOSITE,reddit,海外社交')
-  R.push('GEOSITE,facebook,海外社交')
-  R.push('GEOSITE,instagram,海外社交')
-  R.push('GEOSITE,linkedin,海外社交')
+  R.push('RULE-SET,twitter,海外社交')
+  R.push('RULE-SET,reddit,海外社交')
+  R.push('RULE-SET,facebook,海外社交')
+  R.push('RULE-SET,instagram,海外社交')
+  R.push('RULE-SET,linkedin,海外社交')
   R.push('DOMAIN-SUFFIX,snapchat.com,海外社交')  // snapchat 无 GEOSITE 分类
-  R.push('GEOSITE,pinterest,海外社交')
-  R.push('GEOSITE,threads,海外社交')
-  R.push('GEOSITE,bluesky,海外社交')
-  R.push('GEOSITE,quora,海外社交')
-  R.push('GEOSITE,medium,海外社交')
-  R.push('GEOSITE,imgur,海外社交')
-  R.push('GEOSITE,flickr,海外社交')
-  R.push('GEOSITE,tumblr,海外社交')
-  R.push('GEOSITE,pixiv,海外社交')
+  R.push('RULE-SET,pinterest,海外社交')
+  R.push('RULE-SET,threads,海外社交')
+  R.push('RULE-SET,bluesky,海外社交')
+  R.push('RULE-SET,quora,海外社交')
+  R.push('RULE-SET,medium,海外社交')
+  R.push('RULE-SET,imgur,海外社交')
+  R.push('RULE-SET,flickr,海外社交')
+  R.push('RULE-SET,tumblr,海外社交')
+  R.push('RULE-SET,pixiv,海外社交')
 
   // 字节海外专属
   var bytedanceOverseas = [
@@ -425,15 +448,15 @@ function injectRules(config) {
 
   // 流媒体
   R.push('RULE-SET,tiktok,流媒体')
-  R.push('GEOSITE,netflix,流媒体')
-  R.push('GEOSITE,spotify,流媒体')
-  R.push('GEOSITE,hulu,流媒体')
-  R.push('GEOSITE,hbo,流媒体')
-  R.push('GEOSITE,disney,流媒体')
-  R.push('GEOSITE,primevideo,流媒体')
-  R.push('GEOSITE,twitch,流媒体')
-  R.push('GEOSITE,vimeo,流媒体')
-  R.push('GEOSITE,dailymotion,流媒体')
+  R.push('RULE-SET,netflix,流媒体')
+  R.push('RULE-SET,spotify,流媒体')
+  R.push('RULE-SET,hulu,流媒体')
+  R.push('RULE-SET,hbo,流媒体')
+  R.push('RULE-SET,disney,流媒体')
+  R.push('RULE-SET,primevideo,流媒体')
+  R.push('RULE-SET,twitch,流媒体')
+  R.push('RULE-SET,vimeo,流媒体')
+  R.push('RULE-SET,dailymotion,流媒体')
   // 以下 4 项无 GEOSITE 分类，保留硬编码
   R.push('DOMAIN-SUFFIX,discoveryplus.com,流媒体')
   R.push('DOMAIN-SUFFIX,paramountplus.com,流媒体')
@@ -443,8 +466,8 @@ function injectRules(config) {
   // 游戏平台：国服直连，海外走代理
   // category-games-cn 含 mihoyo-cn / tencent-games / kurogames / bilibili-game 等
   // category-games-!cn 含 Steam / Epic / Blizzard / Nintendo / PlayStation / Xbox 等
-  R.push('GEOSITE,category-games-cn,DIRECT')
-  R.push('GEOSITE,category-games-!cn,海外游戏')
+  R.push('RULE-SET,games-cn,DIRECT')
+  R.push('RULE-SET,games-global,海外游戏')
 
   // 开发工具
   // 注：docker/npmjs/pypi/crates/jetbrains/stackoverflow/gitlab/almalinux 等
@@ -465,7 +488,7 @@ function injectRules(config) {
   R.push('DOMAIN-SUFFIX,fedoraproject.org,DIRECT')
   // Fermilab 镜像（AlmaLinux 默认仓库，美国服务器）
   R.push('DOMAIN-SUFFIX,linux-mirrors.fnal.gov,开发工具')
-  R.push('GEOSITE,category-dev,开发工具')
+  R.push('RULE-SET,dev,开发工具')
 
   // 苹果（apple.com.cn / icloud.com.cn / mzstatic.com 已在 apple 规则集内）
   R.push('DOMAIN-SUFFIX,icloud.com,DIRECT')
@@ -497,8 +520,8 @@ function injectRules(config) {
   }
 
   // 基础分流
-  // 注：GEOSITE,cn 与 RULE-SET,cn_sites 数据同源（MetaCubeX geosite），仅保留后者；
-  //     GEOIP,CN 已前移至局域网规则之后
+  // 注：cn_sites 与旧版 GEOSITE,cn 数据同源（MetaCubeX geosite）；
+  //     国内 IP（cn-ip）已前移至局域网规则之后
   R.push('RULE-SET,gfw,节点选择')
   R.push('RULE-SET,cn_sites,国内直连')
   R.push('RULE-SET,proxy_sites,节点选择')
@@ -521,6 +544,7 @@ function main(config) {
     if (!Array.isArray(config.rules)) config.rules = []
 
     overwriteGeneral(config)
+    applyClientFingerprint(config.proxies)
     cleanupSubscription(config)
     var c = classifyAllNodes(config.proxies)
     log('[' + VERSION + '] Valid proxies: ' + c.ALL.length + ' (filtered from ' + config.proxies.length + ' total)')
