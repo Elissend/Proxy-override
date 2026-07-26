@@ -8,7 +8,7 @@
 // 强制每次规则增删都经过一次清点确认。
 
 const EXPECTED = {
-  RULES: 170,
+  RULES: 173,
   PROVIDERS: 47,
   DOMAIN_REGEX: 17,
   KEEP_ALIVE_IDLE: 600,

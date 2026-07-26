@@ -352,6 +352,12 @@ function injectRules(config) {
   R.push('DOMAIN-SUFFIX,bootcss.com,DIRECT')
   R.push('DOMAIN-SUFFIX,staticfile.org,DIRECT')
   R.push('DOMAIN-SUFFIX,upaiyun.com,DIRECT')
+  // 字节国内业务直连（抖音/头条核心 API 与 CDN，上游 cn 列表未收录，
+  // 前置钉直连并豁免 QUIC 阻断——否则抖音评论区等偶发加载失败。
+  // 注：ibyteimg.com/ibytedtos.com 为字节与 TikTok 共用存储，是否直连见 README）
+  R.push('DOMAIN-SUFFIX,snssdk.com,DIRECT')
+  R.push('DOMAIN-SUFFIX,bytecdn.cn,DIRECT')
+  R.push('DOMAIN-SUFFIX,bytedscript.com,DIRECT')
   // Android 系统服务（被墙，走代理；广告规则可能误伤需前置放行）
   R.push('DOMAIN-SUFFIX,mtalk.google.com,Google')
   R.push('DOMAIN,clientservices.googleapis.com,Google')

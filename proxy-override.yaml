@@ -796,6 +796,9 @@ rules:
   - DOMAIN-SUFFIX,bootcss.com,DIRECT
   - DOMAIN-SUFFIX,staticfile.org,DIRECT
   - DOMAIN-SUFFIX,upaiyun.com,DIRECT
+  - DOMAIN-SUFFIX,snssdk.com,DIRECT
+  - DOMAIN-SUFFIX,bytecdn.cn,DIRECT
+  - DOMAIN-SUFFIX,bytedscript.com,DIRECT
   # Android 系统服务（被墙，走代理；广告规则可能误伤需前置放行）
   - DOMAIN-SUFFIX,mtalk.google.com,Google
   - DOMAIN,clientservices.googleapis.com,Google
