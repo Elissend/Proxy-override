@@ -1,5 +1,5 @@
 # Mihomo 通用配置模板
-# 版本：v4.1 (2026-07-26)
+# 版本：v4.2 (2026-07-26)
 # 架构：3 基础设施组 + 13 业务策略组 + 47 rule-providers + 全加密 DNS
 # 适用：Mihomo / Clash.Meta 内核；任何机场订阅
 # 对应 JS 覆写脚本：proxy-override.js
@@ -363,7 +363,7 @@ proxy-groups:
 
 # ---- 远程规则集（47 个 MRS，全 mrs 化） ----
 #  下载统一走 DIRECT；fastly.jsdelivr.net 国内可直连，失败可换镜像
-#  更新间隔按序错开 15 秒，避免全部规则集同时唤醒下载
+#  更新周期按序错开 15 秒：首次加载仍会一并下载，长期更新时刻会逐渐散开
 #  geolocation-cn / bilibili 仅供 DNS 分流（nameserver-policy）引用
 
 rule-providers:
@@ -889,6 +889,10 @@ rules:
   - RULE-SET,tumblr,海外社交
   - RULE-SET,pixiv,海外社交
 
+  # --- TikTok（须在字节海外段之前：ibytedtos/ibyteimg 等 CDN 同属 tiktok 规则集，
+  #     置后会被字节海外规则遮蔽，流媒体组的节点选择将对 TikTok 视频不生效）---
+  - RULE-SET,tiktok,流媒体
+
   # --- 字节海外专属 ---
   - DOMAIN-SUFFIX,byteoversea.com,节点选择
   - DOMAIN-SUFFIX,byteoversea.net,节点选择
@@ -902,8 +906,7 @@ rules:
   # 字节海外云是 BytePlus 系域名，不受影响
   - DOMAIN-SUFFIX,volces.com,DIRECT
 
-  # --- 流媒体 ---
-  - RULE-SET,tiktok,流媒体
+  # --- 流媒体（tiktok 已前置到字节海外段之前）---
   - RULE-SET,netflix,流媒体
   - RULE-SET,spotify,流媒体
   - RULE-SET,hulu,流媒体

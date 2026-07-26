@@ -1,12 +1,12 @@
 // Mihomo 覆写脚本
-// 版本：v4.1 (2026-07-26)
+// 版本：v4.2 (2026-07-26)
 // 适用：支持 JavaScript 覆写的 Mihomo 客户端；TUN 由客户端自行控制
 //
 // 导入方法：在客户端中创建覆写脚本并粘贴本文件全部内容，
 // 再到订阅的「覆写」设置中启用该脚本，刷新订阅生效。
 // 具体入口以客户端说明为准，README 有详细步骤说明。
 
-const VERSION = 'v4.1'
+const VERSION = 'v4.2'
 
 // 兼容部分 Mihomo 客户端精简的 JS 运行环境（console 可能不存在）
 var log = (typeof console !== 'undefined' && console.log) ? console.log.bind(console) : function() {}
@@ -135,7 +135,8 @@ function applyClientFingerprint(proxies) {
 
 function isInfoNode(name) {
   if (!name || typeof name !== 'string') return true
-  return /(剩余|到期|官网|套餐|流量|网址|地址|过期|重置|更新|应急|免费|试用|登录|注册|Sign|Login|Register|Help|FAQ|客服|联系|网站)/i.test(name)
+  // 英文关键词带词界，避免误杀含子串的正常节点名（如 Signal 命中 Sign）
+  return /(剩余|到期|官网|套餐|流量|网址|地址|过期|重置|更新|应急|免费|试用|登录|注册|客服|联系|网站|\b(?:Sign|Login|Register|Help|FAQ)\b)/i.test(name)
 }
 
 // ---- 节点分类 ----
@@ -296,7 +297,7 @@ function injectRuleProviders(config) {
     var url = s[1] === 'dustin'
       ? CDN_BASE + '/gh/DustinWin/ruleset_geodata@mihomo-ruleset/' + s[2] + '.mrs'
       : CDN_BASE + '/gh/MetaCubeX/meta-rules-dat@meta/geo/' + (s[1] === 'geoip' ? 'geoip/' : 'geosite/') + s[2] + '.mrs'
-    // 更新间隔按序错开 15 秒，避免全部规则集同时唤醒下载
+    // 更新周期按序错开 15 秒：首次加载仍会一并下载，长期更新时刻会逐渐散开
     RP[s[0]] = { type: 'http', behavior: s[3], format: 'mrs', url: url,
       path: './ruleset/' + s[0] + '.mrs', interval: 85500 + i * 15, proxy: 'DIRECT' }
   }
@@ -455,6 +456,10 @@ function injectRules(config) {
   R.push('RULE-SET,tumblr,海外社交')
   R.push('RULE-SET,pixiv,海外社交')
 
+  // TikTok（须在字节海外段之前：ibytedtos/ibyteimg 等 CDN 同属 tiktok 规则集，
+  // 置后会被字节海外规则遮蔽，流媒体组的节点选择将对 TikTok 视频不生效）
+  R.push('RULE-SET,tiktok,流媒体')
+
   // 字节海外专属
   var bytedanceOverseas = [
     'byteoversea.com', 'byteoversea.net', 'ibytedtos.com', 'ibyteimg.com',
@@ -467,8 +472,7 @@ function injectRules(config) {
   // 字节海外云是 BytePlus 系域名，不受影响
   R.push('DOMAIN-SUFFIX,volces.com,DIRECT')
 
-  // 流媒体
-  R.push('RULE-SET,tiktok,流媒体')
+  // 流媒体（tiktok 已前置到字节海外段之前）
   R.push('RULE-SET,netflix,流媒体')
   R.push('RULE-SET,spotify,流媒体')
   R.push('RULE-SET,hulu,流媒体')
@@ -571,9 +575,13 @@ function injectRules(config) {
 // ---- 主函数 ----
 
 function main(config) {
+  var backup = null
   try {
     if (!config || typeof config !== 'object') return config
     if (!Array.isArray(config.proxies) || config.proxies.length === 0) return config
+    // 失败快照：后续任何一步抛异常都整体回退原始订阅配置，
+    // 绝不放行「规则已清空、DNS 已改写」的半成品（那会造成静默裸连或断网）
+    backup = JSON.parse(JSON.stringify(config))
     log('[' + VERSION + '] Start processing, ' + config.proxies.length + ' proxies')
 
     if (!Array.isArray(config['proxy-groups'])) config['proxy-groups'] = []
@@ -583,13 +591,23 @@ function main(config) {
     applyClientFingerprint(config.proxies)
     cleanupSubscription(config)
     var c = classifyAllNodes(config.proxies)
+    // 保底：节点名全部命中信息节点过滤器时（部分机场命名风格如此），
+    // 空的 url-test/fallback 组会让内核拒载整份配置——此时回退为不过滤
+    if (c.ALL.length === 0) {
+      log('[' + VERSION + '] WARN: all proxies matched info-node filter, fallback to no filtering')
+      for (var fb = 0; fb < config.proxies.length; fb++) {
+        if (config.proxies[fb] && config.proxies[fb].name) c.ALL.push(String(config.proxies[fb].name))
+      }
+    }
     log('[' + VERSION + '] Valid proxies: ' + c.ALL.length + ' (filtered from ' + config.proxies.length + ' total)')
     buildProxyGroups(config, c)
     injectRuleProviders(config)
     injectRules(config)
     log('[' + VERSION + '] Done — ' + config['proxy-groups'].length + ' groups, ' + Object.keys(config['rule-providers']).length + ' rule-providers, ' + config.rules.length + ' rules')
   } catch (e) {
-    log('[' + VERSION + '] ERROR: ' + e.message)
+    // String(e) 兼容 throw 字符串/null 的引擎行为（e.message 此时为 undefined）
+    log('[' + VERSION + '] ERROR: ' + String(e) + (e && e.stack ? ' | ' + e.stack : ''))
+    if (backup) return backup
   }
   return config
 }

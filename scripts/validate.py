@@ -2,15 +2,16 @@
 """YAML 校验 + 与 JS 生成结果的一致性对比(本地与 CI 通用)
 
 用法:
-    node scripts/validate.js --dump > /tmp/js-dump.json
-    python scripts/validate.py /tmp/js-dump.json
+    node scripts/validate.js --dump > js-dump.json
+    python scripts/validate.py js-dump.json
 """
-import io, json, os, sys
+import io, json, os, sys, tempfile
 
 import yaml
 
 ROOT = os.path.join(os.path.dirname(__file__), '..')
-dump_path = sys.argv[1] if len(sys.argv) > 1 else '/tmp/js-dump.json'
+# 默认路径用系统临时目录,兼容 Windows(/tmp 仅存在于类 Unix)
+dump_path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(tempfile.gettempdir(), 'js-dump.json')
 
 js = json.load(io.open(dump_path, encoding='utf-8'))
 y = yaml.safe_load(io.open(os.path.join(ROOT, 'proxy-override.yaml'), encoding='utf-8'))
@@ -19,13 +20,22 @@ errs = []
 
 # JS ↔ YAML 三大块逐字节一致
 if y['rules'] != js['rules']:
-    diff = [(a, b) for a, b in zip(y['rules'], js['rules']) if a != b]
-    errs.append('rules 不一致,差异 %d 处,首处: %s' % (len(diff), diff[:1]))
+    if len(y['rules']) != len(js['rules']):
+        errs.append('rules 数量不一致: YAML=%d JS=%d' % (len(y['rules']), len(js['rules'])))
+    else:
+        diff = [(i, a, b) for i, (a, b) in enumerate(zip(y['rules'], js['rules'])) if a != b]
+        errs.append('rules 内容不一致 %d 处,首处 #%d: YAML=%r JS=%r' % (len(diff), diff[0][0], diff[0][1], diff[0][2]))
 if y['rule-providers'] != js['providers']:
     ka, kb = set(y['rule-providers']), set(js['providers'])
-    errs.append('rule-providers 不一致: 仅YAML=%s 仅JS=%s' % (ka - kb, kb - ka))
+    if ka != kb:
+        errs.append('rule-providers 键不一致: 仅YAML=%s 仅JS=%s' % (sorted(ka - kb), sorted(kb - ka)))
+    else:
+        bad = [k for k in ka if y['rule-providers'][k] != js['providers'][k]]
+        errs.append('rule-providers 字段不一致的项: %s' % sorted(bad))
 if y['dns'] != js['dns']:
-    errs.append('dns 配置不一致')
+    keys = set(y['dns']) | set(js['dns'])
+    bad = sorted(k for k in keys if y['dns'].get(k) != js['dns'].get(k))
+    errs.append('dns 不一致的键: %s' % bad)
 
 # YAML 独有项
 if 'global-client-fingerprint' in y:

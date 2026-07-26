@@ -6,9 +6,15 @@ on:
   pull_request:
   workflow_dispatch:
 
+# 同一分支的旧运行自动取消,避免排队浪费
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -26,28 +32,30 @@ jobs:
         run: node scripts/validate.js --dump > /tmp/js-dump.json
 
       - name: 安装 PyYAML
-        run: pip install --quiet pyyaml
+        run: python3 -m pip install --quiet pyyaml
 
       - name: YAML 校验与 JS↔YAML 一致性
         run: python scripts/validate.py /tmp/js-dump.json
 
-      - name: 47 个规则集 URL 可达性
+      - name: 规则集 URL 可达性(并行,带重试)
         run: |
           node scripts/validate.js --urls > /tmp/urls.txt
-          fail=0
-          while read -r u; do
-            ok=0
+          check() {
             for i in 1 2 3; do
-              curl -sfIL --max-time 20 "$u" -o /dev/null && ok=1 && break
+              curl -sfIL --max-time 20 "$1" -o /dev/null && return 0
               sleep 3
             done
-            [ "$ok" = 1 ] || { echo "不可达: $u"; fail=1; }
-          done < /tmp/urls.txt
-          exit $fail
+            echo "不可达: $1"; return 1
+          }
+          export -f check
+          xargs -a /tmp/urls.txt -P 8 -I{} bash -c 'check "$@"' _ {}
 
       - name: mihomo 真实内核配置测试
         run: |
-          tag=$(curl -sfL https://api.github.com/repos/MetaCubeX/mihomo/releases/latest | python3 -c "import json,sys; print(json.load(sys.stdin)['tag_name'])")
+          # 带 token 调 API,规避共享 runner 的未认证限额
+          tag=$(curl -sfL -H "Authorization: Bearer ${{ github.token }}" \
+            https://api.github.com/repos/MetaCubeX/mihomo/releases/latest \
+            | python3 -c "import json,sys; print(json.load(sys.stdin)['tag_name'])")
           echo "内核版本: $tag"
           curl -sfL "https://github.com/MetaCubeX/mihomo/releases/download/${tag}/mihomo-linux-amd64-${tag}.gz" -o mihomo.gz
           gunzip mihomo.gz && chmod +x mihomo
