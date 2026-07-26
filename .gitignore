@@ -1,0 +1,7 @@
+CLAUDE.md
+.claude/
+
+# Smart 实验版不入库
+proxy-override-smart.js
+proxy-override-smart.yaml
+proxy-override-egern.yaml

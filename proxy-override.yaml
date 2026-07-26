@@ -1,47 +1,56 @@
-# FlClash / Mihomo 通用覆写配置
-# 版本：v3.2 (2026-07-23)
-# 架构：3 基础设施组 + 13 业务策略组 + 9 rule-providers + 全加密 DNS
+# Mihomo 通用配置模板
+# 版本：v3.3 (2026-07-26)
+# 架构：3 基础设施组 + 13 业务策略组 + 11 rule-providers + 全加密 DNS
 # 适用：Mihomo / Clash.Meta 内核；任何机场订阅
 # 对应 JS 覆写脚本：proxy-override.js
 #
-# === 导入方法 ===
+# ---- 导入方法 ----
 #
 # 将本文件作为 Mihomo 配置文件加载（或与现有配置合并）。
 # 必须将 proxy-providers.sub.url 替换为你的机场订阅链接。
 #
-# ================================================================
 
-# ================================================================
-#  全局参数
-# ================================================================
+# ---- 全局参数 ----
 
 unified-delay: true
 tcp-concurrent: true
 keep-alive-idle: 30
 keep-alive-interval: 15
+# uTLS 指纹伪装（对 vmess/vless 等基于 TLS 的节点生效）
+global-client-fingerprint: chrome
 
 profile:
   store-selected: true
-  store-fake-ip: false
+  # 重启后保留 fake-ip 映射，避免应用 DNS 缓存指向失效地址导致短暂断流
+  store-fake-ip: true
 
 geox-url:
   geosite: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geosite.dat
   geoip: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip.dat
   geoip-mmdb: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip.metadb
 
-# ================================================================
-#  端口 / SOCKS / 混合入站
-# ================================================================
+# geosite/geoip 数据自动更新（否则 .dat 只在首次下载，之后永不更新）
+geo-auto-update: true
+geo-update-interval: 24
+
+# ---- 端口 / SOCKS / 混合入站 ----
 
 mixed-port: 7890
 allow-lan: false
 mode: rule
 log-level: info
 external-controller: 127.0.0.1:9090
+# API 鉴权：无 secret 时恶意网页可从浏览器向 127.0.0.1:9090 发请求操控内核。
+# ！使用前必须改成你自己的随机字符串，生成方法：
+#   Windows PowerShell:  -join ((1..32) | ForEach-Object { '{0:x}' -f (Get-Random -Max 16) })
+#   Linux / macOS:       openssl rand -hex 16
+# Web 面板（如 metacubexd）连接 127.0.0.1:9090 时填写此密钥
+secret: "请修改为你自己的随机字符串"
+# 可选：本地面板。取消注释后访问 http://127.0.0.1:9090/ui
+# external-ui: ./ui
+# external-ui-url: "https://github.com/MetaCubeX/metacubexd/archive/refs/heads/gh-pages.zip"
 
-# ================================================================
-#  Sniffer 嗅探
-# ================================================================
+# ---- Sniffer 嗅探 ----
 
 sniffer:
   enable: true
@@ -65,9 +74,7 @@ sniffer:
     - +.oray.net
     - +.apple.com
 
-# ================================================================
-#  DNS 全加密
-# ================================================================
+# ---- DNS 全加密 ----
 
 dns:
   enable: true
@@ -76,6 +83,8 @@ dns:
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
   fake-ip-filter:
+    # geosite:private 覆盖 .home.arpa / .internal 等更多局域网域名形式
+    - geosite:private
     - +.lan
     - +.local
     - +.localhost
@@ -100,11 +109,15 @@ dns:
     - +.time.apple.com
     - +.time.google.com
     - +.time.nist.gov
+    - time.windows.com
     - ip.cip.cc
     - captive.apple.com
     - connectivitycheck.gstatic.com
     - id6.me
-    - localhost.ptlogin2.qq.com
+    # 微信/QQ 全家桶不走 fake-ip（登录、语音通话对 DNS 结果敏感）
+    - +.qq.com
+    - +.wechat.com
+    - +.weixinbridge.com
     - +.cmpassport.com
     - +.mcdn.bilivideo.cn
     - +.battlenet.com.cn
@@ -119,24 +132,21 @@ dns:
     - tls://223.5.5.5
   direct-nameserver:
     - https://dns.alidns.com/dns-query
+  # 注：biliintl（海外站）与 aistudio 已删——它们路由到代理组，
+  # fake-ip 模式下本地解析结果不会被使用，属于死条目
   nameserver-policy:
-    geosite:cn,geolocation-cn,bilibili,biliintl:
+    geosite:cn,geolocation-cn,bilibili:
       - https://dns.alidns.com/dns-query
       - https://doh.pub/dns-query
       - tls://223.5.5.5
       - tls://223.6.6.6
-    aistudio.google.com:
-      - https://dns.cloudflare.com/dns-query
-      - https://dns.google/dns-query
   nameserver:
     - https://dns.cloudflare.com/dns-query
     - https://dns.google/dns-query
   respect-rules: true
   direct-nameserver-follow-policy: true
 
-# ================================================================
-#  代理订阅（proxy-provider）
-# ================================================================
+# ---- 代理订阅（proxy-provider） ----
 #  替换 sub.url 为你的机场订阅链接
 #  如机场订阅本身就是 Clash 兼容格式，type 保持 http
 #  如机场提供 SS/SSR/Vmess 链接，需后端转换后使用
@@ -171,9 +181,7 @@ proxy-providers:
       lazy: true
       timeout: 5000
 
-# ================================================================
-#  连接代理（手动添加的独立节点，可选）
-# ================================================================
+# ---- 连接代理（手动添加的独立节点，可选） ----
 
 proxies: []
   # - name: "手动节点示例"
@@ -183,9 +191,7 @@ proxies: []
   #   cipher: aes-256-gcm
   #   password: "your-password"
 
-# ================================================================
-#  策略组
-# ================================================================
+# ---- 策略组 ----
 
 proxy-groups:
   # --- 基础设施组（3 个）---
@@ -358,10 +364,10 @@ proxy-groups:
       - DIRECT
       - REJECT
 
-# ================================================================
-#  远程规则集（9 个 MRS）
-# ================================================================
+# ---- 远程规则集（9 个 MRS） ----
 #  所有 URL 使用 fastly.jsdelivr.net CDN 分发
+#  下载统一走 DIRECT：指向策略组时，首次启动或组内选中节点故障会导致
+#  规则集静默更新失败；fastly.jsdelivr.net 国内可直连
 #  中国大陆用户遇到下载失败可替换以下任一镜像:
 #    fastly.jsdelivr.net    → testingcf.jsdelivr.net (Cloudflare CDN)
 #    fastly.jsdelivr.net    → gcore.jsdelivr.net     (Gcore CDN)
@@ -376,14 +382,35 @@ rule-providers:
     interval: 85515
     proxy: DIRECT
 
-  openai:
+  # 公共 BT tracker（BT 流量必须直连：机场普遍禁 P2P，走代理有封号风险）
+  bt-tracker:
     type: http
     behavior: domain
     format: mrs
-    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/openai.mrs
-    path: ./ruleset/meta-openai.mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/category-public-tracker.mrs
+    path: ./ruleset/bt-tracker.mrs
+    interval: 86475
+    proxy: DIRECT
+
+  # 国内 HTTPDNS 服务端点（拦截后 App 回落系统 DNS，防止绕过域名分流）
+  httpdns:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/category-httpdns-cn.mrs
+    path: ./ruleset/httpdns.mrs
+    interval: 86490
+    proxy: DIRECT
+
+  # category-ai-!cn 含 OpenAI/Claude/Gemini/Copilot/Perplexity/Mistral 等主流 AI 服务
+  ai:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/category-ai-!cn.mrs
+    path: ./ruleset/meta-ai.mrs
     interval: 85530
-    proxy: AI
+    proxy: DIRECT
 
   tiktok:
     type: http
@@ -392,7 +419,7 @@ rule-providers:
     url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/tiktok.mrs
     path: ./ruleset/meta-tiktok.mrs
     interval: 85575
-    proxy: 流媒体
+    proxy: DIRECT
 
   github:
     type: http
@@ -410,7 +437,7 @@ rule-providers:
     url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/microsoft.mrs
     path: ./ruleset/meta-microsoft.mrs
     interval: 85650
-    proxy: 微软
+    proxy: DIRECT
 
   apple:
     type: http
@@ -419,7 +446,7 @@ rule-providers:
     url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/apple.mrs
     path: ./ruleset/meta-apple.mrs
     interval: 85665
-    proxy: 苹果
+    proxy: DIRECT
 
   proxy_sites:
     type: http
@@ -448,17 +475,35 @@ rule-providers:
     interval: 86445
     proxy: DIRECT
 
-# ================================================================
-#  分流规则
-# ================================================================
+# ---- 分流规则 ----
 
 rules:
+  # --- BT / P2P 直连（放最前：机场普遍禁 BT，走代理有封号风险，
+  #     且 tracker 拿到代理 IP 会拖慢下载）---
+  - PROCESS-NAME,qbittorrent.exe,DIRECT
+  - PROCESS-NAME,BitComet.exe,DIRECT
+  - PROCESS-NAME,uTorrent.exe,DIRECT
+  - PROCESS-NAME,transmission-qt.exe,DIRECT
+  - PROCESS-NAME,aria2c.exe,DIRECT
+  - PROCESS-NAME,Thunder.exe,DIRECT
+  - RULE-SET,bt-tracker,DIRECT
+
+  # --- 个人自定义直连（使用者请按需修改或删除本段）---
+  # 前置放行：优先级高于广告拦截和所有业务分流，
+  # 适合放行你自己常用的小程序、公司内网、学校系统、游戏端口等
+  - DOMAIN-SUFFIX,school-wx.qshnhealth.com,DIRECT
+  - DOMAIN-SUFFIX,xindazhilian.com,DIRECT
+  - DOMAIN-SUFFIX,chiphell.com,DIRECT
+  - DOMAIN-SUFFIX,halo.run,DIRECT
+  - DST-PORT,33068,DIRECT
+  - DST-PORT,6540,DIRECT
+  - DST-PORT,26880,DIRECT
+
   # --- 微信小程序基础设施（anti-ad 规则集可能误伤 *.wxs.qq.com，优先放行）---
   - DOMAIN-SUFFIX,wxs.qq.com,DIRECT
   - DOMAIN-SUFFIX,wx.qlogo.cn,DIRECT
   - DOMAIN-SUFFIX,servicewechat.com,DIRECT
   - DOMAIN-SUFFIX,mp.weixin.qq.com,DIRECT
-  - DOMAIN,school-wx.qshnhealth.com,DIRECT
 
   # --- 火山引擎 APM / 极光推送（anti-ad 规则集误伤，米哈游等国服游戏基础设施）---
   - DOMAIN,apmplus.volces.com,DIRECT
@@ -484,6 +529,22 @@ rules:
   - DOMAIN-SUFFIX,dl.google.com,Google
   - DOMAIN-SUFFIX,dl.l.google.com,Google
 
+  # --- HTTPDNS 拦截（在误伤放行之后：国内 App 用 HTTPDNS 拿真实 IP 直连，
+  #     会绕过域名分流；拦截后 App 回落系统 DNS。个别 App 异常时在此前加 DIRECT 放行）---
+  - RULE-SET,httpdns,REJECT
+
+  # --- 局域网 / 私有网络（必须在 QUIC 阻断之前：局域网纯 IP 流量匹配不了
+  #     domain 类型的 cn_sites，NOT 取反后 UDP 443 会被误 REJECT）---
+  - DST-PORT,7680,REJECT
+  - GEOSITE,private,DIRECT
+  - GEOIP,private,DIRECT,no-resolve
+  - DOMAIN,localhost,DIRECT
+  - DOMAIN-SUFFIX,local,DIRECT
+
+  # --- 国内 IP 提前直连（no-resolve：仅命中无域名的纯 IP 流量，
+  #     顺带豁免国内 IP 的 QUIC 阻断；域名流量不受影响）---
+  - GEOIP,CN,国内直连,no-resolve
+
   # --- 广告拦截 ---
   - GEOSITE,category-ads-all,广告拦截
   - RULE-SET,anti-ad,广告拦截
@@ -495,59 +556,37 @@ rules:
   - AND,((DST-PORT,443),(NETWORK,UDP),(GEOSITE,google)),Google
   - AND,((DST-PORT,443),(NETWORK,UDP),(NOT,((RULE-SET,cn_sites)))),REJECT
 
-  # --- 局域网 / 私有网络 ---
-  - DST-PORT,7680,REJECT
-  - GEOSITE,private,DIRECT
-  - GEOIP,private,DIRECT,no-resolve
-  - DOMAIN,localhost,DIRECT
-  - DOMAIN-SUFFIX,local,DIRECT
-
-  # --- 前置拦截（确保规则集和 DNS 下载可用）---
+  # --- 前置拦截（规则集 CDN / DoH 域名）---
   - DOMAIN-SUFFIX,jsdelivr.net,节点选择
   - DOMAIN,dns.google,节点选择
   - DOMAIN,dns.google.com,节点选择
+  - DOMAIN,dns.cloudflare.com,节点选择
 
   # --- YouTube ---
   - GEOSITE,youtube,YouTube
 
-  # --- AI ---
-  - RULE-SET,openai,AI
-  - DOMAIN-SUFFIX,chatgpt.com,AI
-  - DOMAIN-SUFFIX,oaistatic.com,AI
-  - DOMAIN-SUFFIX,oaiusercontent.com,AI
-  - DOMAIN-SUFFIX,sora.com,AI
-  - DOMAIN-SUFFIX,claude.ai,AI
-  - DOMAIN-SUFFIX,anthropic.com,AI
-  - DOMAIN-SUFFIX,ai.google.dev,AI
-  - DOMAIN-SUFFIX,generativelanguage.googleapis.com,AI
-  - DOMAIN-SUFFIX,mistral.ai,AI
-  - DOMAIN-SUFFIX,perplexity.ai,AI
-  - DOMAIN-SUFFIX,cohere.ai,AI
-  - DOMAIN-SUFFIX,cohere.com,AI
-  - DOMAIN-SUFFIX,midjourney.com,AI
+  # --- AI（须在 GEOSITE,google 之前：category-ai-!cn 含 gemini/aistudio 等
+  #     Google 域名，确保它们归入对地区敏感的 AI 组）---
+  - RULE-SET,ai,AI
+  # 以下为 category-ai-!cn 未覆盖的补充域名
   - DOMAIN-SUFFIX,stability.ai,AI
-  - DOMAIN-SUFFIX,cursor.com,AI
-  - DOMAIN-SUFFIX,cursor.sh,AI
-  - DOMAIN-SUFFIX,huggingface.co,AI
   - DOMAIN-SUFFIX,replicate.com,AI
   - DOMAIN-SUFFIX,together.ai,AI
   - DOMAIN-SUFFIX,suno.ai,AI
   - DOMAIN-SUFFIX,suno.com,AI
-  - DOMAIN-SUFFIX,openrouter.ai,AI
   - DOMAIN-SUFFIX,runpod.io,AI
-  - DOMAIN-SUFFIX,x.ai,AI
-  - DOMAIN-SUFFIX,grok.com,AI
-  - DOMAIN-SUFFIX,copilot.microsoft.com,AI
 
-  # --- Google 基础服务（在 AI 之后，避免遮蔽特定 API 子域名）---
-  - DOMAIN-SUFFIX,gstatic.com,Google
-  - DOMAIN-SUFFIX,googleapis.com,Google
+  # --- Google 服务（在 AI 之后，避免遮蔽特定 API 子域名；
+  #     GEOSITE,google 已含 gstatic.com / googleapis.com 等全部 Google 域名）---
+  - GEOSITE,google,Google
 
-  # --- DeepSeek（国内直连）---
-  - DOMAIN-SUFFIX,deepseek.com,国内直连
+  # 注：DeepSeek 等国内 AI 无需单独规则——category-ai-!cn 按命名契约
+  #     排除国内服务（已逐一验证），cn 规则集兜底直连
 
-  # --- Telegram ---
+  # --- Telegram（客户端大量使用纯 IP 直连且无 SNI，GEOIP 规则必不可少，
+  #     否则这些流量全部落入漏网之鱼）---
   - GEOSITE,telegram,Telegram
+  - GEOIP,telegram,Telegram,no-resolve
 
   # --- 海外社交 ---
   - GEOSITE,twitter,海外社交
@@ -575,7 +614,9 @@ rules:
   - DOMAIN-SUFFIX,larksuite.com,节点选择
   - DOMAIN-SUFFIX,lark.com,节点选择
   - DOMAIN-SUFFIX,pangle.io,节点选择
-  - DOMAIN-SUFFIX,volces.com,节点选择
+  # 火山引擎是字节国内云（豆包/方舟 API、国服游戏 APM 等），整域直连；
+  # 字节海外云是 BytePlus 系域名，不受影响
+  - DOMAIN-SUFFIX,volces.com,DIRECT
 
   # --- 流媒体 ---
   - RULE-SET,tiktok,流媒体
@@ -601,72 +642,44 @@ rules:
   - GEOSITE,category-games-!cn,海外游戏
 
   # --- 开发工具 ---
+  # 注：docker/npmjs/pypi/crates/jetbrains/stackoverflow/gitlab/almalinux 等
+  #     已由 GEOSITE,category-dev 覆盖，此处仅保留未覆盖的补充域名
   - RULE-SET,github,开发工具
-  - DOMAIN-SUFFIX,ghcr.io,开发工具
-  - DOMAIN-SUFFIX,github.io,开发工具
-  - DOMAIN-SUFFIX,docker.io,开发工具
-  - DOMAIN-SUFFIX,docker.com,开发工具
-  - DOMAIN-SUFFIX,repo.maven.apache.org,开发工具
   - DOMAIN-SUFFIX,maven.apache.org,开发工具
-  - DOMAIN-SUFFIX,jetbrains.com,开发工具
-  - DOMAIN-SUFFIX,jetbrains.space,开发工具
-  - DOMAIN-SUFFIX,jetbrains.net,开发工具
-  - DOMAIN-SUFFIX,npmjs.org,开发工具
-  - DOMAIN-SUFFIX,npmjs.com,开发工具
-  - DOMAIN-SUFFIX,yarnpkg.com,开发工具
-  - DOMAIN-SUFFIX,pypi.org,开发工具
-  - DOMAIN-SUFFIX,pythonhosted.org,开发工具
-  - DOMAIN-SUFFIX,crates.io,开发工具
-  - DOMAIN-SUFFIX,rubygems.org,开发工具
-  - DOMAIN-SUFFIX,nuget.org,开发工具
-  - DOMAIN-SUFFIX,packagist.org,开发工具
-  - DOMAIN-SUFFIX,stackoverflow.com,开发工具
-  - DOMAIN-SUFFIX,stackexchange.com,开发工具
   - DOMAIN-SUFFIX,vercel.com,开发工具
   - DOMAIN-SUFFIX,vercel.app,开发工具
   - DOMAIN-SUFFIX,netlify.com,开发工具
   - DOMAIN-SUFFIX,netlify.app,开发工具
   - DOMAIN-SUFFIX,pages.dev,开发工具
   - DOMAIN-SUFFIX,workers.dev,开发工具
-  - DOMAIN-SUFFIX,gitlab.com,开发工具
   - DOMAIN-SUFFIX,bitbucket.org,开发工具
   - DOMAIN-SUFFIX,digitalocean.com,开发工具
   - DOMAIN-SUFFIX,vultr.com,开发工具
   - DOMAIN-SUFFIX,heroku.com,开发工具
   - DOMAIN-SUFFIX,fly.io,开发工具
   - DOMAIN-SUFFIX,render.com,开发工具
-  - DOMAIN-SUFFIX,sentry.io,开发工具
   - DOMAIN-SUFFIX,postman.com,开发工具
   - DOMAIN-SUFFIX,notion.so,开发工具
   - DOMAIN-SUFFIX,figma.com,开发工具
   - DOMAIN-SUFFIX,atlassian.com,开发工具
-  - DOMAIN-SUFFIX,hashicorp.com,开发工具
-  - DOMAIN-SUFFIX,terraform.io,开发工具
   # --- Fedora 镜像直连（Metalink 根据来源 IP 自动分配国内镜像）---
   - DOMAIN-SUFFIX,fedoraproject.org,DIRECT
-  # AlmaLinux 镜像列表被 GFW 阻断，走代理
-  - DOMAIN-SUFFIX,almalinux.org,开发工具
+  # Fermilab 镜像（AlmaLinux 默认仓库，美国服务器）
   - DOMAIN-SUFFIX,linux-mirrors.fnal.gov,开发工具
   - GEOSITE,category-dev,开发工具
 
-  # --- 苹果 ---
+  # --- 苹果（apple.com.cn / icloud.com.cn / mzstatic.com 已在 apple 规则集内）---
   - DOMAIN-SUFFIX,icloud.com,DIRECT
   - RULE-SET,apple,苹果
-  - DOMAIN-SUFFIX,apple.com.cn,苹果
-  - DOMAIN-SUFFIX,icloud.com.cn,苹果
-  - DOMAIN-SUFFIX,mzstatic.com,苹果
 
-  # --- 微软 ---
+  # --- 微软（msftconnecttest / msn.com / live.com / sfx.ms 已在 microsoft 规则集内）---
   - DOMAIN-SUFFIX,storeedge.microsoft.com,DIRECT
   - DOMAIN-SUFFIX,mp.microsoft.com,DIRECT
   - RULE-SET,microsoft,微软
   - DOMAIN-SUFFIX,microsoft.cn,微软
-  - DOMAIN-SUFFIX,msftconnecttest.com,微软
-  - DOMAIN-SUFFIX,msn.com,微软
-  - DOMAIN-SUFFIX,live.com,微软
-  - DOMAIN-SUFFIX,sfx.ms,微软
 
-  # --- 国内直连 ---
+  # --- 国内直连（严格说与 cn 规则集重复，保留意图：首次启动 cn_sites.mrs
+  #     尚未下载成功时，头部站点仍能直连保底；成本可忽略）---
   - DOMAIN-SUFFIX,baidu.com,DIRECT
   - DOMAIN-SUFFIX,bdstatic.com,DIRECT
   - DOMAIN-SUFFIX,bilibili.com,DIRECT
@@ -681,28 +694,18 @@ rules:
   - DOMAIN-SUFFIX,163.com,DIRECT
   - DOMAIN-SUFFIX,126.com,DIRECT
   - DOMAIN-SUFFIX,126.net,DIRECT
-  - DOMAIN-SUFFIX,chiphell.com,DIRECT
-  - DOMAIN-SUFFIX,xindazhilian.com,DIRECT
-  - DOMAIN-SUFFIX,halo.run,DIRECT
 
-  # --- 端口直连 ---
+  # --- 端口直连（NTP / STUN 通用端口；个人端口在顶部自定义段维护）---
   - DST-PORT,123,DIRECT
   - DST-PORT,3478,DIRECT
   - DST-PORT,3479,DIRECT
-  - DST-PORT,33068,DIRECT
-  - DST-PORT,6540,DIRECT
-  - DST-PORT,26880,DIRECT
-
-  # --- Google .cn 防误伤 ---
-  - DOMAIN-SUFFIX,services.googleapis.cn,Google
-  - DOMAIN-SUFFIX,googleapis.cn,Google
 
   # --- 基础分流 ---
+  # 注：GEOSITE,cn 与 RULE-SET,cn_sites 数据同源（MetaCubeX geosite），仅保留后者；
+  #     GEOIP,CN 已前移至局域网规则之后
   - RULE-SET,gfw,节点选择
   - RULE-SET,cn_sites,国内直连
-  - GEOSITE,cn,国内直连
   - RULE-SET,proxy_sites,节点选择
-  - GEOIP,CN,国内直连,no-resolve
 
   # --- 最终匹配 ---
   - MATCH,漏网之鱼
