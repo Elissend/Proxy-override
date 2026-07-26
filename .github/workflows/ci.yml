@@ -11,6 +11,10 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# 仅需只读:内核步骤用 GITHUB_TOKEN 调 GET releases/latest
+permissions:
+  contents: read
+
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -63,7 +67,10 @@ jobs:
           curl -sfL "https://github.com/MetaCubeX/mihomo/releases/download/${tag}/mihomo-linux-amd64-${tag}.gz" -o mihomo.gz
           gunzip mihomo.gz && chmod +x mihomo
           sed 's|https://你的机场订阅链接|http://127.0.0.1:9/dummy.yaml|' proxy-override.yaml > /tmp/test.yaml
-          out=$(./mihomo -t -f /tmp/test.yaml -d /tmp 2>&1); code=$?
+          # code=0 前置 + || code=$?:避免 bash -e 在内核非零退出时于赋值处中止,
+          # 保证下方 echo 一定打印内核输出以供定位
+          code=0
+          out=$(./mihomo -t -f /tmp/test.yaml -d /tmp 2>&1) || code=$?
           echo "$out"
           # 除了退出码,还要求零 error 级日志(曾借此发现 global-client-fingerprint 被移除)
           if [ $code -ne 0 ] || echo "$out" | grep -q "level=error"; then exit 1; fi

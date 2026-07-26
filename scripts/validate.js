@@ -34,13 +34,15 @@ const cfg = globalThis.main({
 console.log = origLog
 
 const mode = process.argv[2]
+// 用 stdout.write + 自然退出(不用 process.exit),让 Node 排空管道缓冲,
+// 避免大 JSON 经 `| python` 时被截断;顶层 return 阻止落入下方断言
 if (mode === '--dump') {
-  console.log(JSON.stringify({ rules: cfg.rules, providers: cfg['rule-providers'], dns: cfg.dns }))
-  process.exit(0)
+  process.stdout.write(JSON.stringify({ rules: cfg.rules, providers: cfg['rule-providers'], dns: cfg.dns }) + '\n')
+  return
 }
 if (mode === '--urls') {
-  for (const p of Object.values(cfg['rule-providers'])) console.log(p.url)
-  process.exit(0)
+  process.stdout.write(Object.values(cfg['rule-providers']).map(p => p.url).join('\n') + '\n')
+  return
 }
 
 const errs = []

@@ -6,9 +6,11 @@
 //   node scripts/generate-yaml.js --check   # 只校验,过期则退出码 1(CI 用)
 //
 // 注释保留机制:生成区内的注释行(及其前的空行)按「下一行内容」锚定,
-// 重新生成时自动跟随该行移动;锚定行消失则注释一并移除(stderr 警告)。
-// 因此:改分流语义只改 JS;想给某条规则加注释,直接写在 YAML 该行上方即可,
-// 会跨越重新生成而保留。
+// 重新生成时自动跟随该行移动。锚定要求下一行在本区内唯一——
+// 全部规则行(- RULE-SET/- DOMAIN-... 各不相同)均满足,故给规则加注释安全;
+// 但若注释锚在重复的字段行上(如 dns 区的 tls://... 、rule-providers 的 type: http)
+// 或位于区块末尾,无法可靠附着,会被丢弃并打印 stderr 警告。
+// 因此:改分流语义只改 JS;给规则加注释直接写在该规则行上方即可跨生成保留。
 //
 // 若存在本地实验文件 proxy-override-smart.yaml(不入库),同步更新其生成区。
 
@@ -70,26 +72,36 @@ function buildRegion(name) {
 // ---- 注释锚定:从旧区块提取「空行/注释行 → 下一内容行」映射 ----
 function extractAnchors(oldLines) {
   const anchors = new Map() // key: 内容行(trim) → 注释块;仅对区内唯一的内容行生效
+  const dropped = []        // 无法锚定的注释块(非唯一锚定行 / 区块尾部)
   const counts = new Map()
   for (const l of oldLines) {
     if (l.trim() === '' || l.trim().startsWith('#')) continue
     counts.set(l.trim(), (counts.get(l.trim()) || 0) + 1)
   }
+  var warnIfComment = function (block) {
+    var c = block.filter(function (x) { return x.trim().startsWith('#') })
+    if (c.length) dropped.push(c.join(' | '))
+  }
   let pending = []
   for (const l of oldLines) {
     if (l.trim() === '' || l.trim().startsWith('#')) { pending.push(l); continue }
-    if (pending.length && counts.get(l.trim()) === 1) anchors.set(l.trim(), pending)
+    if (pending.length) {
+      if (counts.get(l.trim()) === 1) anchors.set(l.trim(), pending)
+      else warnIfComment(pending) // 锚定行在区内不唯一,注释无法可靠附着
+    }
     pending = []
   }
-  return anchors
+  if (pending.length) warnIfComment(pending) // 区块尾部注释(其后无内容行)
+  return { anchors: anchors, dropped: dropped }
 }
 
 function attachComments(newLines, anchors) {
   const out = []
   const used = new Set()
   for (const l of newLines) {
-    const a = anchors.get(l.trim())
-    if (a) { out.push(...a); used.add(l.trim()) }
+    var key = l.trim()
+    var a = anchors.get(key)
+    if (a && !used.has(key)) { out.push(...a); used.add(key) } // 仅附着到首个匹配行,避免重复
     out.push(l)
   }
   for (const [k, v] of anchors) {
@@ -114,7 +126,11 @@ function processFile(file) {
     const from = mb.index + mb[0].length + 1
     const to = me.index
     const oldLines = s.slice(from, to).replace(/\n$/, '').split('\n')
-    const newLines = attachComments(buildRegion(name), extractAnchors(oldLines))
+    const ex = extractAnchors(oldLines)
+    for (const c of ex.dropped) {
+      process.stderr.write('警告: [' + name + '] 注释锚定行不唯一或位于区块尾部,已丢弃: ' + c.slice(0, 80) + '\n')
+    }
+    const newLines = attachComments(buildRegion(name), ex.anchors)
     s = s.slice(0, from) + newLines.join('\n') + '\n' + s.slice(to)
   }
   if (s === text) return false
