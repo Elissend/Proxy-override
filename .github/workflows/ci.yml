@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: JS 语法检查
+        run: node --check proxy-override.js
+
+      - name: 语义断言(规则数/引用完整性/正则逗号安全等)
+        run: node scripts/validate.js
+
+      - name: 导出 JS 生成配置
+        run: node scripts/validate.js --dump > /tmp/js-dump.json
+
+      - name: 安装 PyYAML
+        run: pip install --quiet pyyaml
+
+      - name: YAML 校验与 JS↔YAML 一致性
+        run: python scripts/validate.py /tmp/js-dump.json
+
+      - name: 47 个规则集 URL 可达性
+        run: |
+          node scripts/validate.js --urls > /tmp/urls.txt
+          fail=0
+          while read -r u; do
+            ok=0
+            for i in 1 2 3; do
+              curl -sfIL --max-time 20 "$u" -o /dev/null && ok=1 && break
+              sleep 3
+            done
+            [ "$ok" = 1 ] || { echo "不可达: $u"; fail=1; }
+          done < /tmp/urls.txt
+          exit $fail
+
+      - name: mihomo 真实内核配置测试
+        run: |
+          tag=$(curl -sfL https://api.github.com/repos/MetaCubeX/mihomo/releases/latest | python3 -c "import json,sys; print(json.load(sys.stdin)['tag_name'])")
+          echo "内核版本: $tag"
+          curl -sfL "https://github.com/MetaCubeX/mihomo/releases/download/${tag}/mihomo-linux-amd64-${tag}.gz" -o mihomo.gz
+          gunzip mihomo.gz && chmod +x mihomo
+          sed 's|https://你的机场订阅链接|http://127.0.0.1:9/dummy.yaml|' proxy-override.yaml > /tmp/test.yaml
+          out=$(./mihomo -t -f /tmp/test.yaml -d /tmp 2>&1); code=$?
+          echo "$out"
+          # 除了退出码,还要求零 error 级日志(曾借此发现 global-client-fingerprint 被移除)
+          if [ $code -ne 0 ] || echo "$out" | grep -q "level=error"; then exit 1; fi

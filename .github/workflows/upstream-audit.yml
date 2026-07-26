@@ -1,0 +1,53 @@
+name: Upstream Audit
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'   # 每周一 UTC 03:00(北京时间 11:00)
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 克隆 v2fly 规则源码
+        run: git clone --depth 1 https://github.com/v2fly/domain-list-community /tmp/dlc
+
+      - name: 关键域名归属与正则漂移检查
+        id: audit
+        run: python3 scripts/upstream_audit.py /tmp/dlc/data 2>&1 | tee /tmp/audit.log
+
+      - name: 漂移时自动开 issue
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs')
+            let log = ''
+            try { log = fs.readFileSync('/tmp/audit.log', 'utf8') } catch {}
+            const { data: open } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo,
+              state: 'open', labels: 'upstream-drift',
+            })
+            const body = [
+              '每周上游哨兵检测到漂移,详情:',
+              '```', log.trim() || '(日志为空,请查看 Actions 运行记录)', '```',
+              `运行记录: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            ].join('\n')
+            if (open.length) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: open[0].number, body,
+              })
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner, repo: context.repo.repo,
+                title: '上游漂移警报:规则集内容发生变化',
+                labels: ['upstream-drift'], body,
+              })
+            }

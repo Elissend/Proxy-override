@@ -3,6 +3,8 @@
 [![GitHub Repo stars](https://img.shields.io/github/stars/Elissend/Proxy-override?style=flat)](https://github.com/Elissend/Proxy-override/stargazers)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/t/Elissend/Proxy-override?style=flat)
 [![jsDelivr hits](https://data.jsdelivr.com/v1/package/gh/Elissend/Proxy-override/badge?style=rounded)](https://www.jsdelivr.com/package/gh/Elissend/Proxy-override)
+[![CI](https://img.shields.io/github/actions/workflow/status/Elissend/Proxy-override/ci.yml?branch=main&label=CI&style=flat)](https://github.com/Elissend/Proxy-override/actions/workflows/ci.yml)
+[![Upstream Audit](https://img.shields.io/github/actions/workflow/status/Elissend/Proxy-override/upstream-audit.yml?branch=main&label=%E4%B8%8A%E6%B8%B8%E5%93%A8%E5%85%B5&style=flat)](https://github.com/Elissend/Proxy-override/actions/workflows/upstream-audit.yml)
 
 Mihomo 分流配置,提供 JavaScript 覆写脚本与独立 YAML 模板两种形态。导入后自动生成策略组、分流规则、远程规则集与加密 DNS,开箱即用。
 
@@ -151,6 +153,19 @@ Web 面板(如 [metacubexd](https://metacubex.github.io/metacubexd/))连接 `127
 4. DNS 查询失败时,先确认节点可用,再检查客户端没有覆盖脚本的 DNS 设置
 
 脚本运行时会输出以 `[v4.1]` 开头的日志,但部分客户端不显示 `console.log`,不能作为唯一判断依据。
+
+## 自动化验证
+
+每次提交都会由 CI 自动执行完整质检,普通用户无需关心,但你可以据此判断 main 分支的可用性(看顶部 CI 徽章):
+
+- **语义断言**:规则数量、规则集引用完整性、DOMAIN-REGEX 逗号安全、keep-alive 参数、uTLS 注入行为
+- **JS ↔ YAML 一致性**:两种形态的规则/规则集/DNS 逐字节对比
+- **规则集可达性**:47 个 mrs URL 逐一实测(带重试)
+- **真实内核测试**:下载最新版 mihomo 执行 `-t` 配置测试,要求零 error 日志
+
+另有**每周上游哨兵**(Upstream Audit):监测上游规则集的关键域名归属与正则条目漂移(例如某国内 AI 被误收进代理分类、我们补偿的正则在上游被增删),发现漂移自动开 issue。
+
+本地复现:`node scripts/validate.js`、`python scripts/validate.py`、`python scripts/upstream_audit.py`(见各脚本头部注释)。
 
 ## 反馈
 
