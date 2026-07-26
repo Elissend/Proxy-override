@@ -1,5 +1,5 @@
 # Mihomo 通用配置模板
-# 版本：v4.0 (2026-07-26)
+# 版本：v4.1 (2026-07-26)
 # 架构：3 基础设施组 + 13 业务策略组 + 47 rule-providers + 全加密 DNS
 # 适用：Mihomo / Clash.Meta 内核；任何机场订阅
 # 对应 JS 覆写脚本：proxy-override.js
@@ -808,14 +808,30 @@ rules:
   - RULE-SET,private-ip,DIRECT,no-resolve
   - DOMAIN,localhost,DIRECT
   - DOMAIN-SUFFIX,local,DIRECT
+  # mrs 补偿：geosite private 的正则条目——nas/router 等无点主机名直连
+  # （mrs 格式不支持正则，以下各处 DOMAIN-REGEX 均为 dat 时代语义还原）
+  - DOMAIN-REGEX,^[a-z0-9]([a-z0-9-]*[a-z0-9])?$,DIRECT
 
   # --- 国内 IP 提前直连（no-resolve：仅命中无域名的纯 IP 流量，
   #     顺带豁免国内 IP 的 QUIC 阻断；域名流量不受影响）---
   - RULE-SET,cn-ip,国内直连,no-resolve
 
+  # --- mrs 补偿：ChatGPT 异步通道。上游把它同时收录于 ads 与 ai 分类，
+  #     dat 时代会被 ads 先行误杀；本配置选择功能正确，前置归入 AI 组 ---
+  - DOMAIN-REGEX,^chatgpt-async-webps-prod-\S+-\d+\.webpubsub\.azure\.com$,AI
+
   # --- 广告拦截 ---
   - RULE-SET,ads-all,广告拦截
   - RULE-SET,anti-ad,广告拦截
+  # mrs 补偿：ads 分类的正则条目（含强制 YouTube/米哈游不走大陆缓存节点）
+  - DOMAIN-REGEX,.+\.awsdns-cn-[0-9][0-9]\.(biz|com|net|top)$,广告拦截
+  - DOMAIN-REGEX,.+\.awsdns-cn-[0-9][a-e0-9]\.cn$,广告拦截
+  - DOMAIN-REGEX,.+\.awsdns-[0-9][0-9]\.(co\.uk|com|net|org)$,广告拦截
+  - DOMAIN-REGEX,^hses[1-7]?\.akamaized\.net$,广告拦截
+  - DOMAIN-REGEX,^r+[0-9]+(---|\.)sn-(2x3|ni5|j5o)\w{5}\.xn--ngstr-lra8j\.com$,广告拦截
+  - DOMAIN-REGEX,^r+[0-9]+(---|\.)sn-(2x3|ni5|j5o)\w{5}\.googlevideo\.com$,广告拦截
+  - DOMAIN-REGEX,^.+-mihayo\.akamaized\.net$,广告拦截
+  - DOMAIN-REGEX,^speed\.(coe|open)\.ad\.[a-z]+\.prod\.hosts\.ooklaserver\.net$,广告拦截
 
   # --- QUIC 阻断（微软/苹果/YouTube/Google 豁免，其余非中国站点 REJECT）---
   - AND,((DST-PORT,443),(NETWORK,UDP),(RULE-SET,microsoft)),微软
@@ -897,6 +913,12 @@ rules:
   - RULE-SET,twitch,流媒体
   - RULE-SET,vimeo,流媒体
   - RULE-SET,dailymotion,流媒体
+  # mrs 补偿：Netflix AWS 前端 / Vimeo CDN 的正则条目
+  - DOMAIN-REGEX,(^|\.)apiproxy-device-prod-nlb-.+\.amazonaws\.com$,流媒体
+  - DOMAIN-REGEX,(^|\.)apiproxy-website-nlb-prod-.+\.amazonaws\.com$,流媒体
+  - DOMAIN-REGEX,(^|\.)dualstack\.apiproxy-.+\.amazonaws\.com$,流媒体
+  - DOMAIN-REGEX,(^|\.)dualstack\.ichnaea-web-.+\.amazonaws\.com$,流媒体
+  - DOMAIN-REGEX,^[0-9]+vod-adaptive\.akamaized\.net$,流媒体
   # 以下 4 项无 GEOSITE 分类，保留硬编码
   - DOMAIN-SUFFIX,discoveryplus.com,流媒体
   - DOMAIN-SUFFIX,paramountplus.com,流媒体
@@ -908,6 +930,8 @@ rules:
   # category-games-!cn 含 Steam / Epic / Blizzard / Nintendo / PlayStation / Xbox 等
   - RULE-SET,games-cn,DIRECT
   - RULE-SET,games-global,海外游戏
+  # mrs 补偿：Epic 海外下载 CDN 正则
+  - DOMAIN-REGEX,^epicgames-download\d\.akamaized\.net$,海外游戏
 
   # --- 开发工具 ---
   # 注：docker/npmjs/pypi/crates/jetbrains/stackoverflow/gitlab/almalinux 等
@@ -935,6 +959,8 @@ rules:
   # Fermilab 镜像（AlmaLinux 默认仓库，美国服务器）
   - DOMAIN-SUFFIX,linux-mirrors.fnal.gov,开发工具
   - RULE-SET,dev,开发工具
+  # mrs 补偿：AWS ECR 镜像仓库正则
+  - DOMAIN-REGEX,.+\.dkr\.ecr\.[^\.]+\.amazonaws\.com$,开发工具
 
   # --- 苹果（apple.com.cn / icloud.com.cn / mzstatic.com 已在 apple 规则集内）---
   - DOMAIN-SUFFIX,icloud.com,DIRECT

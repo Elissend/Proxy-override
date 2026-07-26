@@ -1,12 +1,12 @@
 // Mihomo 覆写脚本
-// 版本：v4.0 (2026-07-26)
+// 版本：v4.1 (2026-07-26)
 // 适用：支持 JavaScript 覆写的 Mihomo 客户端；TUN 由客户端自行控制
 //
 // 导入方法：在客户端中创建覆写脚本并粘贴本文件全部内容，
 // 再到订阅的「覆写」设置中启用该脚本，刷新订阅生效。
 // 具体入口以客户端说明为准，README 有详细步骤说明。
 
-const VERSION = 'v4.0'
+const VERSION = 'v4.1'
 
 // 兼容部分 Mihomo 客户端精简的 JS 运行环境（console 可能不存在）
 var log = (typeof console !== 'undefined' && console.log) ? console.log.bind(console) : function() {}
@@ -369,14 +369,35 @@ function injectRules(config) {
   R.push('RULE-SET,private-ip,DIRECT,no-resolve')
   R.push('DOMAIN,localhost,DIRECT')
   R.push('DOMAIN-SUFFIX,local,DIRECT')
+  // mrs 补偿：geosite private 的正则条目——nas/router 等无点主机名直连
+  // （mrs 格式不支持正则，以下各处 DOMAIN-REGEX 均为 dat 时代语义还原）
+  R.push('DOMAIN-REGEX,^[a-z0-9]([a-z0-9-]*[a-z0-9])?$,DIRECT')
 
   // 国内 IP 提前直连（no-resolve：仅命中无域名的纯 IP 流量，
   // 顺带豁免国内 IP 的 QUIC 阻断；域名流量不受影响）
   R.push('RULE-SET,cn-ip,国内直连,no-resolve')
 
+  // mrs 补偿：ChatGPT 异步通道。上游把它同时收录于 ads 与 ai 分类，
+  // dat 时代会被 ads 先行误杀；本配置选择功能正确，前置归入 AI 组
+  R.push('DOMAIN-REGEX,^chatgpt-async-webps-prod-\\S+-\\d+\\.webpubsub\\.azure\\.com$,AI')
+
   // 广告拦截
   R.push('RULE-SET,ads-all,广告拦截')
   R.push('RULE-SET,anti-ad,广告拦截')
+  // mrs 补偿：ads 分类的正则条目（含强制 YouTube/米哈游不走大陆缓存节点）
+  var adsRegex = [
+    '.+\\.awsdns-cn-[0-9][0-9]\\.(biz|com|net|top)$',
+    '.+\\.awsdns-cn-[0-9][a-e0-9]\\.cn$',
+    '.+\\.awsdns-[0-9][0-9]\\.(co\\.uk|com|net|org)$',
+    '^hses[1-7]?\\.akamaized\\.net$',
+    '^r+[0-9]+(---|\\.)sn-(2x3|ni5|j5o)\\w{5}\\.xn--ngstr-lra8j\\.com$',
+    '^r+[0-9]+(---|\\.)sn-(2x3|ni5|j5o)\\w{5}\\.googlevideo\\.com$',
+    '^.+-mihayo\\.akamaized\\.net$',
+    '^speed\\.(coe|open)\\.ad\\.[a-z]+\\.prod\\.hosts\\.ooklaserver\\.net$'
+  ]
+  for (var q = 0; q < adsRegex.length; q++) {
+    R.push('DOMAIN-REGEX,' + adsRegex[q] + ',广告拦截')
+  }
 
   // QUIC 阻断（微软/苹果/YouTube/Google 豁免，其余非中国站点 REJECT）
   R.push('AND,((DST-PORT,443),(NETWORK,UDP),(RULE-SET,microsoft)),微软')
@@ -457,6 +478,17 @@ function injectRules(config) {
   R.push('RULE-SET,twitch,流媒体')
   R.push('RULE-SET,vimeo,流媒体')
   R.push('RULE-SET,dailymotion,流媒体')
+  // mrs 补偿：Netflix AWS 前端 / Vimeo CDN 的正则条目
+  var streamRegex = [
+    '(^|\\.)apiproxy-device-prod-nlb-.+\\.amazonaws\\.com$',
+    '(^|\\.)apiproxy-website-nlb-prod-.+\\.amazonaws\\.com$',
+    '(^|\\.)dualstack\\.apiproxy-.+\\.amazonaws\\.com$',
+    '(^|\\.)dualstack\\.ichnaea-web-.+\\.amazonaws\\.com$',
+    '^[0-9]+vod-adaptive\\.akamaized\\.net$'
+  ]
+  for (var w = 0; w < streamRegex.length; w++) {
+    R.push('DOMAIN-REGEX,' + streamRegex[w] + ',流媒体')
+  }
   // 以下 4 项无 GEOSITE 分类，保留硬编码
   R.push('DOMAIN-SUFFIX,discoveryplus.com,流媒体')
   R.push('DOMAIN-SUFFIX,paramountplus.com,流媒体')
@@ -468,6 +500,8 @@ function injectRules(config) {
   // category-games-!cn 含 Steam / Epic / Blizzard / Nintendo / PlayStation / Xbox 等
   R.push('RULE-SET,games-cn,DIRECT')
   R.push('RULE-SET,games-global,海外游戏')
+  // mrs 补偿：Epic 海外下载 CDN 正则
+  R.push('DOMAIN-REGEX,^epicgames-download\\d\\.akamaized\\.net$,海外游戏')
 
   // 开发工具
   // 注：docker/npmjs/pypi/crates/jetbrains/stackoverflow/gitlab/almalinux 等
@@ -489,6 +523,8 @@ function injectRules(config) {
   // Fermilab 镜像（AlmaLinux 默认仓库，美国服务器）
   R.push('DOMAIN-SUFFIX,linux-mirrors.fnal.gov,开发工具')
   R.push('RULE-SET,dev,开发工具')
+  // mrs 补偿：AWS ECR 镜像仓库正则
+  R.push('DOMAIN-REGEX,.+\\.dkr\\.ecr\\.[^\\.]+\\.amazonaws\\.com$,开发工具')
 
   // 苹果（apple.com.cn / icloud.com.cn / mzstatic.com 已在 apple 规则集内）
   R.push('DOMAIN-SUFFIX,icloud.com,DIRECT')
