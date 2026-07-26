@@ -4,7 +4,6 @@
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/t/Elissend/Proxy-override?style=flat)
 [![jsDelivr hits](https://data.jsdelivr.com/v1/package/gh/Elissend/Proxy-override/badge?style=rounded)](https://www.jsdelivr.com/package/gh/Elissend/Proxy-override)
 [![CI](https://img.shields.io/github/actions/workflow/status/Elissend/Proxy-override/ci.yml?branch=main&label=CI&style=flat)](https://github.com/Elissend/Proxy-override/actions/workflows/ci.yml)
-[![Upstream Audit](https://img.shields.io/github/actions/workflow/status/Elissend/Proxy-override/upstream-audit.yml?branch=main&label=%E4%B8%8A%E6%B8%B8%E5%93%A8%E5%85%B5&style=flat)](https://github.com/Elissend/Proxy-override/actions/workflows/upstream-audit.yml)
 
 Mihomo 分流配置,提供 JavaScript 覆写脚本与独立 YAML 模板两种形态。导入后自动生成策略组、分流规则、远程规则集与加密 DNS,开箱即用。
 
@@ -163,9 +162,7 @@ Web 面板(如 [metacubexd](https://metacubex.github.io/metacubexd/))连接 `127
 - **规则集可达性**:47 个 mrs URL 逐一实测(带重试)
 - **真实内核测试**:下载最新版 mihomo 执行 `-t` 配置测试,要求零 error 日志
 
-另有**每周上游哨兵**(Upstream Audit):监测上游规则集的关键域名归属与正则条目漂移(例如某国内 AI 被误收进代理分类、我们补偿的正则在上游被增删),发现漂移自动开 issue。
-
-本地复现:`node scripts/validate.js`、`python scripts/validate.py`、`python scripts/upstream_audit.py`(见各脚本头部注释)。
+本地复现:`node scripts/validate.js`、`python scripts/validate.py`(见各脚本头部注释)。
 
 ## 反馈
 
